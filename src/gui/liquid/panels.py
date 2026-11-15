@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager
 
 from .appearance import GlassChoice, GlassSlider
@@ -706,7 +707,7 @@ class RestoreDrawer(GlassPanel):
         self._readiness_uid=uid
         self._readiness_state=state
         if state not in ('ready','checking'):
-            self.window.liquid.notifications.add('Device needs attention',message)
+            notify('Device needs attention',message)
         self._readiness_checked=time.monotonic()
         self._readiness_attempts+=1
         self.retry_connection.setVisible(state!='ready')

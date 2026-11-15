@@ -114,6 +114,12 @@ args = [
     # Bundle with os.pathsep, not ':' — on Windows the separator is ';'.
     '--add-data=' + os.pathsep.join(('src/gui/liquid/assets', 'src/gui/liquid/assets')),
     '--add-data=' + os.pathsep.join(('awesomeui/LICENSE', 'licenses/awesomeUI')),
+    # Release news ships with every packaged version (NEWS.md at the bundle
+    # root); users read what changed even outside the What's New window.
+    '--add-data=' + os.pathsep.join(('NEWS.md', '.')),
+    # What's New screenshots/GIFs, discovered at runtime from the package
+    # directory (Path(__file__).parent/'whats_new') — see the README there.
+    '--add-data=' + os.pathsep.join(('src/gui/whats_new', 'src/gui/whats_new')),
     # Bundle the helper tool modules (imported lazily by the CLI wrapper).
     '--hidden-import=apply_wallpaper',
     '--hidden-import=restore_cache',

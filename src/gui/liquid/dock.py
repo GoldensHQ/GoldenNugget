@@ -357,7 +357,7 @@ class LiquidDock(GlassPanel):
         self.raise_()
         liquid=getattr(self.window,'liquid',None)
         if liquid is not None:
-            liquid.notifications.position()
+            liquid.dock_gear.position()
         self.update()
         if self.popup.isVisible():
             self.position_popup()

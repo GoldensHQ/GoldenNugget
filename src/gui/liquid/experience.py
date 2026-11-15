@@ -20,6 +20,7 @@ from awesomeui.liquid.controls import (
 )
 from awesomeui.liquid.motion import animate
 from awesomeui.liquid.reveal import DevicePeek, PageReveal
+from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager
 
 from .panels import DeviceDrawer, RestoreDrawer, WorkspaceSettings
@@ -81,8 +82,8 @@ class LiquidExperience(QObject):
         self.device=DeviceDrawer(window)
         self.settings=WorkspaceSettings(window)
         self.restore=RestoreDrawer(window)
-        from .notifications import Notifications
-        self.notifications=Notifications(window)
+        from .dock_gear import DockGear
+        self.dock_gear=DockGear(window)
         self.border=UpdateBorder(window)
         self.device_button=LiquidButton('Device',window)
         self.device_button.setIcon(QIcon(str(Path(__file__).parent/'assets/usb.svg')))
@@ -354,10 +355,9 @@ class LiquidExperience(QObject):
         if uid and uid!=self.last_device:
             self.arrival()
         if self.last_device and not uid and not self.window.bottom_navigation.operation_active():
-            self.notifications.add('Device disconnected','Reconnect your device to apply changes.')
+            notify('Device disconnected','Reconnect your device to apply changes.')
         self.last_device=uid
-        self.notifications.position()
-        self.home.update_notice.hide()
+        self.dock_gear.position()
         self.home.status_lbl.hide()
         self.home.device_connection.hide()
         if self.home._update_available is True and not self.update_shown:
@@ -369,8 +369,8 @@ class LiquidExperience(QObject):
             self.peek.peek()
 
     def show_update(self):
-        self.notifications.add('Update available','A new GoldenNugget version is available.',
-                               self.home._show_update_info)
+        notify('Update available','A new GoldenNugget version is available.',
+               self.home._show_update_info)
 
     def load_preset(self, name):
         import json

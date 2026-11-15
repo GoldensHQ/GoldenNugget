@@ -637,6 +637,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
             self.settings.setValue("ui/interface_choice_done", True)
             self._sync_settings()
 
+        # Updated since the last run: show the What's New window (once per
+        # version; fresh installs start silent).
+        from src.gui.dialogs.whats_new import maybe_show_whats_new
+        maybe_show_whats_new(self, self.settings)
+
         # First launch: remind the user to back up the device before tweaking
         # (keeps asking until they confirm a backup was made)
         if not self.settings.value("backup_prompt_done", False, type=bool):

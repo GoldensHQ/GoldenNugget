@@ -23,6 +23,7 @@ from src.gui.dialogs.reset_dialog import ResetDialog
 from src.gui.ios.theme_manager import ThemeManager
 from src.gui.ios.tweaks import _hidden_feature_names
 from src.gui.logger import get_logger
+from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager, theme_icon
 from src.gui.thread_workers.apply_worker import (
     ApplyAlertMessage,
@@ -1238,6 +1239,17 @@ class ApplyMixin(_WindowBase):
         # Mirror progress into the iOS surfaces (home indicator + Apply page)
         try:
             if txt:
+                if not getattr(self, '_attention_notified', False) and (
+                        'Waiting for device after reboot' in txt
+                        or 'enter its passcode' in txt):
+                    # The device rebooted mid-apply and now waits for the user
+                    # (security recovery / lock screen) — surface it once.
+                    self._attention_notified = True
+                    notify(QCoreApplication.translate("Nugget", "Need your attention"),
+                           QCoreApplication.translate(
+                               "Nugget",
+                               "The device rebooted while applying tweaks. "
+                               "Unlock it and keep it connected."))
                 self.ios_home.show_process_status(txt)
                 self.ios_apply.set_status(txt)
         except Exception:
@@ -1656,6 +1668,7 @@ class ApplyMixin(_WindowBase):
                 self._prepare_rollback_preset()
             self.dismiss_operation_result()
             self.apply_in_progress = True
+            self._attention_notified = False
             self.show_ios_page(6)
             self.toggle_thread_btns(disabled=True)
             self.worker_thread = ApplyThread(manager=self.device_manager, settings=self.settings, reset_pages=reset_pages)
@@ -1895,6 +1908,13 @@ class ApplyMixin(_WindowBase):
         restart_required = success and not self.device_manager.pref_manager.auto_reboot
         self.ios_home.result_card.show_result(success, text, is_reset, restart_required, self.device_manager.get_current_device_model())
         self.ios_apply.result_card.show_result(success, text, is_reset, restart_required, self.device_manager.get_current_device_model())
+        if success:
+            body = (self.tr("Restart your iPhone to see the changes, then check the result.")
+                    if restart_required else
+                    self.tr("Check the result on your iPhone. You can keep GoldenNugget open."))
+        else:
+            body = error_msg
+        notify(self.tr('Apply Done!') if success else self.tr('Apply Failed!'), body)
         if self.content_stack.currentWidget() is getattr(self, "connect_placeholder", None):
             self.show_ios_page(6)
         self.ios_home.device_details.update_info()
