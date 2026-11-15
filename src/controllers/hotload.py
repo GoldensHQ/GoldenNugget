@@ -14,6 +14,7 @@ import os
 import ssl
 import time
 import urllib.request
+from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import QCoreApplication, QStandardPaths
@@ -143,7 +144,7 @@ class HotLoad:
             if not isinstance(parsed, dict) or "rules" not in parsed:
                 return False
             parsed["_fetched_at"] = int(time.time())
-            path = _rules_path()
+            path = Path(_rules_path())
             # Atomic: a crash or full disk mid-write must not leave a truncated
             # JSON that silently kills every safety rule on the next launch.
             tmp_path = path.with_name(path.name + ".part")
