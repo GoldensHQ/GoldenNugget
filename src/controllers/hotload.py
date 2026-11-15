@@ -21,7 +21,7 @@ from src.tweaks.registry import SECTION_FEATURES, SPECS_BY_SECTION
 from src.utils.paths import app_data_dir, brand_dir
 from src.version import App_Version as _APP_VERSION
 
-RULES_URL = ("https://raw.githubusercontent.com/GoldenNugget-Team/"
+RULES_URL = ("https://raw.githubusercontent.com/GoldensHQ/"
              "GoldenNugget/main/hotload_rules.json")
 RULES_FILENAME = "hotload_rules.json"
 KILL_SWITCH_KEY = "hotload_enabled"

@@ -3,5 +3,5 @@
 	url = https://github.com/awesomenull-dev/gNugget-i18n.git
 [submodule "awesomeui"]
 	path = awesomeui
-	url = https://github.com/GoldenNugget-Team/awesomeUI.git
+	url = https://github.com/GoldensHQ/awesomeUI.git
 	branch = python

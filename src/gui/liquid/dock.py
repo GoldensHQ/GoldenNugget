@@ -565,7 +565,7 @@ class LiquidDock(GlassPanel):
 
     def _populate_more(self):
         self._clear_popup('More')
-        for name,icon,color,url in [('Discord','discord','#5865f2','https://discord.gg/F7ssrHjdgK'),('GitHub','github','#edf1f7','https://github.com/GoldenNugget-Team/GoldenNugget')]:
+        for name,icon,color,url in [('Discord','discord','#5865f2','https://discord.gg/F7ssrHjdgK'),('GitHub','github','#edf1f7','https://github.com/GoldensHQ/GoldenNugget')]:
             button=self.make_button(name)
             button.setMinimumHeight(48)
             button.setIcon(self.menu_icon(':/icon/'+icon+'.svg',color))

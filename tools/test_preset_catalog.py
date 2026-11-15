@@ -260,7 +260,7 @@ class Tool(unittest.TestCase):
         self.assertIn('templates/bad-one.batter::', result.stdout)
         self.assertNotIn('Community pull requests', result.stdout)
         self.assertIn(f'| Hide Dock | `{SPRINGBOARD}` |', summary.read_text())
-        self.assertIn('open it in [Batter Builder](https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder',
+        self.assertIn('open it in [Batter Builder](https://github.com/GoldensHQ/GoldenNugget-TemplateBuilder',
                       summary.read_text())
         (self.root / 'templates' / 'bad-one.batter').unlink()
         out = self.root / 'site' / 'index.json'

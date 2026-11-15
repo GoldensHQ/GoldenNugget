@@ -58,7 +58,7 @@ as a new preset. As with share codes, nothing is applied until the preset is
 loaded. With a device connected the list shows only presets made for its iOS
 version; untick the box to see all.
 
-The catalog is the `GoldenNugget-Team/GoldenNugget-Presets` repository: one
+The catalog is the `GoldensHQ/GoldenNugget-Presets` repository: one
 `presets/<id>.json` file per preset, holding a share code plus a name, author,
 description, optional `ios_min`/`ios_max` and up to 8 tags. Every pull request
 there is checked by `tools/preset_catalog.py check` (run from this repository's

@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Describe what happened so we can reproduce it. For help using the app, see the [Wiki](https://github.com/GoldenNugget-Team/GoldenNugget/wiki).
+        Describe what happened so we can reproduce it. For help using the app, see the [Wiki](https://github.com/GoldensHQ/GoldenNugget/wiki).
         Do not post backup files, pairing records, passwords, serial numbers, or device UDIDs.
   - type: input
     id: app_version

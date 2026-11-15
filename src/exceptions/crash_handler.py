@@ -49,7 +49,7 @@ from src.utils.i18n import QT_TRANSLATE_NOOP
 
 logger = logging.getLogger("GoldenNugget.crash")
 
-ISSUES_URL = "https://github.com/awesomenull-dev/GoldenNugget/issues/new"
+ISSUES_URL = "https://github.com/GoldensHQ/GoldenNugget/issues/new"
 
 
 # --------------------------------------------------------------------------- #

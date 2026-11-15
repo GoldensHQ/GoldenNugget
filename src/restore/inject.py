@@ -176,6 +176,18 @@ def _native_patch_covers(managed, native):
                for key, value in managed_values.items())
 
 
+def _is_clear_file_payload(contents):
+    """True when the tweak payload replaces the whole file with an empty
+    plist (NullifyFileTweak writes ``plistlib.dumps({})``, not zero bytes),
+    so the current baseline is irrelevant and never needs to parse."""
+    if not isinstance(contents, (bytes, bytearray)):
+        return False
+    try:
+        return plistlib.loads(contents) == {}
+    except (OSError, ValueError, TypeError, plistlib.InvalidFileException):
+        return False
+
+
 def _prepare_preference_merges(conn, device_dir, files, created_history=None):
     prepared = []
     missing = []
@@ -189,6 +201,15 @@ def _prepare_preference_merges(conn, device_dir, files, created_history=None):
                 # A file-nullify payload is the whole intended file: deliver
                 # it as-is with no baseline merge. A "Clear <file>.plist"
                 # tweak must not die on a baseline it never needs to read.
+                prepared.append((domain, path, contents, mode, owner, group))
+                continue
+            if ((isinstance(contents, (bytes, bytearray)) and not contents)
+                    or _is_clear_file_payload(contents)) and not isinstance(
+                    contents, PreferenceKeyReset):
+                # A clear-file tweak (NullifyFileTweak) replaces the whole
+                # file with an empty one — there are no keys to merge onto
+                # the baseline, and an empty payload never parses. Deliver
+                # it verbatim; the baseline state is irrelevant.
                 prepared.append((domain, path, contents, mode, owner, group))
                 continue
             row = conn.execute('SELECT fileID FROM Files WHERE domain=? AND relativePath=? AND flags=1',

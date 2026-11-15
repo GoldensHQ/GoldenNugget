@@ -7,7 +7,7 @@ from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
 from src.gui.theme import ColorThemeManager, t
 from src.tweaks.tweaks import TweakID, tweaks
 
-BATTER_BUILDER_URL = "https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder/releases/latest"
+BATTER_BUILDER_URL = "https://github.com/GoldensHQ/GoldenNugget-TemplateBuilder/releases/latest"
 
 
 class IOSTemplatesPage(QWidget):
