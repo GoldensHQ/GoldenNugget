@@ -313,7 +313,10 @@ def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = 
         return False
     dialog = CrashDialog(summary=summary, traceback_text=traceback_text,
                          info=info, backup_path=backup_path, on_restore=on_restore)
-    return _exec_dialog_on_gui_thread(dialog) == dialog.Accepted
+    # Compare on the class, never on the instance: _exec_dialog_on_gui_thread
+    # already handed the wrapper to deleteLater(), and any attribute lookup on
+    # it afterwards raises AttributeError (masking the original error).
+    return _exec_dialog_on_gui_thread(dialog) == QDialog.DialogCode.Accepted
 
 
 def report_error(summary: str, traceback_text: str, info: Optional[dict] = None,
