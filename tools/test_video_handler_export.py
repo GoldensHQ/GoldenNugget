@@ -136,6 +136,16 @@ class ExportAdaptationTests(unittest.TestCase):
             video_handler.create_caml(video, os.path.join(self._tmp.name, "out5"),
                                       auto_reverses=False, calculationMode='linear')
 
+    def test_unreadable_video_raises_instead_of_exporting_a_broken_package(self):
+        # a corrupt file must be refused here, not after a wipe-and-restore
+        # cycle on the device (empty CAML / duration=0)
+        from src.exceptions.nugget_exception import NuggetException
+        bad = os.path.join(self._tmp.name, "bad.mp4")
+        Path(bad).write_bytes(b"this is not a video")
+        with self.assertRaises(NuggetException):
+            video_handler.create_caml(bad, os.path.join(self._tmp.name, "out6"),
+                                      auto_reverses=False, calculationMode='linear')
+
 
 if __name__ == '__main__':
     unittest.main()

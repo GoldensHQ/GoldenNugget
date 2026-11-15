@@ -803,7 +803,7 @@ async def restore_media_via_afc(lockdown_client, media_root: str,
         return {"files": done_files, "bytes": done_bytes, "skipped": skipped,
                 "failed": failed}
 
-    if not include_historical and current is None and not failed:
+    if not include_historical and current is None:
         raise NuggetException(
             "The media store could not be verified. Available files were restored, "
             "but photo restoration is incomplete. Keep the local media backup.")

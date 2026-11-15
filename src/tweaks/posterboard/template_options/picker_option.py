@@ -89,11 +89,12 @@ class PickerOption(TemplateOption):
         for opt in self.options:
             if opt not in sel_options:
                 for file in opt.files:
-                    # delete files or directories
+                    # delete files or directories (a listed file missing from
+                    # the package is a template-authoring slip, not an error)
                     path = package_path(container_path, file)
                     if os.path.isdir(path):
                         rmtree(path=path, ignore_errors=True)
-                    else:
+                    elif os.path.exists(path):
                         os.remove(path=path)
         # rename the files if needed
         if self.rename:

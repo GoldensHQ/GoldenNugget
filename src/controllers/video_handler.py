@@ -2,6 +2,11 @@ import os
 from shutil import rmtree
 from tempfile import mkdtemp
 
+from src.controllers.files_handler import get_bundle_files
+from src.exceptions.nugget_exception import NuggetException
+from src.exceptions.posterboard_exceptions import VideoLengthException
+from src.utils.i18n import QCoreApplication
+
 # OpenCV (which drags in numpy) and ffmpeg together cost ~160 ms to import and
 # are only needed when a video wallpaper is actually converted. This module is
 # imported at startup through the tweak registry, so the imports are deferred to
@@ -14,7 +19,7 @@ cv2_successful = None
 
 
 def _ensure_video_libs() -> bool:
-    """Import cv2/ffmpeg on first use. Returns True when both are available."""
+    """Import cv2/ffmpeg on first use. Raises when they are unavailable."""
     global cv2, ffmpeg, cv2_successful
     if cv2_successful is None:
         try:
@@ -22,15 +27,12 @@ def _ensure_video_libs() -> bool:
             import ffmpeg as _ffmpeg
             cv2, ffmpeg = _cv2, _ffmpeg
             cv2_successful = True
-        except Exception:
-            print("failed to include cv2!")
+        except Exception as error:
             cv2_successful = False
+            raise NuggetException(QCoreApplication.tr(
+                "The video tools (OpenCV/FFmpeg) could not be loaded: {0}").format(error)) from error
     return cv2_successful
 
-
-from src.controllers.files_handler import get_bundle_files
-from src.exceptions.posterboard_exceptions import VideoLengthException
-from src.utils.i18n import QCoreApplication
 
 ignore_pb_frame_limit = False
 
@@ -76,7 +78,7 @@ def convert_to_mov(input_file: str, output_file: str = None):
     inp = ffmpeg.input(input_file)
     out = ffmpeg.output(inp, output_file, f='mov', vcodec='copy', acodec='copy')
     ffmpeg_bin = get_bundle_files("ffmpeg/bin")
-    if os.name == 'nt' and os.path.exists(ffmpeg_bin):
+    if os.name == 'nt' and os.path.exists(ffmpeg_bin) and ffmpeg_bin not in os.environ['PATH']:
         os.environ['PATH'] += os.pathsep + ffmpeg_bin
     ffmpeg.run(out)
 
@@ -95,6 +97,12 @@ def create_caml(video_path: str, output_file: str, auto_reverses: bool, calculat
     """
     _ensure_video_libs()
     cam = cv2.VideoCapture(video_path)
+    # A file that cannot open (or reports no frame timing) would otherwise
+    # export an empty or zero-duration CAML package that only shows its damage
+    # on the device, after a full wipe-and-restore cycle.
+    if not cam.isOpened():
+        raise NuggetException(QCoreApplication.tr(
+            "The video could not be opened: {0}").format(os.path.basename(video_path)))
     assets_path = os.path.join(output_file, "assets")
     frame_count = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
     reverse = 0
@@ -102,18 +110,16 @@ def create_caml(video_path: str, output_file: str, auto_reverses: bool, calculat
         reverse = 1
     if not ignore_pb_frame_limit and frame_count > FRAME_LIMIT:
         raise VideoLengthException(FRAME_LIMIT)
-    try:
-        # creating a folder named data
-        if not os.path.exists(assets_path): 
-            os.makedirs(assets_path, exist_ok=True) 
-    # if not created then raise error
-    except OSError:
-        print ('Error: Creating directory of data')
+    os.makedirs(assets_path, exist_ok=True)
     
     # frame
     source_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
     source_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cam.get(cv2.CAP_PROP_FPS)
+    if fps <= 0:
+        # duration would be 0 -> an animation that completes instantly
+        raise NuggetException(QCoreApplication.tr(
+            "The video has no readable frame timing: {0}").format(os.path.basename(video_path)))
     # The whole loop keeps its playback duration: sampling every Nth frame
     # keeps N times the per-frame display time (linear calculation mode then
     # cross-fades between the sampled frames).

@@ -69,8 +69,8 @@ class PresetBanner(QFrame):
                     border: none;
                 }}
             """)
-        self.caption_lbl.setStyleSheet(f"font-size: 12px; color: {c.text_secondary};")
-        self.active_lbl.setStyleSheet(f"font-size: 17px; font-weight: 600; color: {c.text_primary};")
+        self.caption_lbl.setStyleSheet(f"font-size: 12px; color: {c.text_secondary}; background: transparent;")
+        self.active_lbl.setStyleSheet(f"font-size: 17px; font-weight: 600; color: {c.text_primary}; background: transparent;")
         self.manage_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
@@ -137,7 +137,7 @@ class PresetWidget(QWidget):
                 "letter-spacing: 0.5px; padding-left: 4px;")
         else:
             self._header.setText(QCoreApplication.translate("Nugget", "Presets"))
-            self._header.setStyleSheet(f"font-size: 16px; font-weight: 600; color: {c.text_primary};")
+            self._header.setStyleSheet(f"font-size: 16px; font-weight: 600; color: {c.text_primary}; background: transparent;")
         self.banner._retheme()
 
     def _on_manage_pressed(self):

@@ -226,7 +226,7 @@ class IOSDaemonsContent(QWidget):
         c = ColorThemeManager.instance().colors
         master_label = QLabel(QCoreApplication.translate("Nugget", "Enable Daemon Modifications"))
         master_label.setWordWrap(True)
-        master_label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+        master_label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
         self._master_label = master_label
         master_text = QVBoxLayout()
         master_text.setSpacing(4)
@@ -234,7 +234,7 @@ class IOSDaemonsContent(QWidget):
         master_detail = QLabel(self.tr("Each switch below stops a background service when you apply. Turning this master switch off does not undo changes already on the device."))
         master_detail.setWordWrap(True)
         master_detail.setProperty("daemonInformation", True)
-        master_detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+        master_detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         master_text.addWidget(master_detail)
         master_row.addLayout(master_text, 1)
         self.master_switch = LiquidSwitch(self.daemons_tweak.enabled)
@@ -360,7 +360,7 @@ class IOSDaemonsContent(QWidget):
             label = QLabel(QCoreApplication.translate(
                 "Nugget", "Clear Saved Screen Time Settings"))
             label.setWordWrap(True)
-            label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+            label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
             self._screen_time_label = label
             text = QVBoxLayout()
             text.setSpacing(4)
@@ -368,7 +368,7 @@ class IOSDaemonsContent(QWidget):
             detail = QLabel(self.tr("Clears one saved Screen Time settings file. Does not reliably remove app or website restrictions."))
             detail.setWordWrap(True)
             detail.setProperty("daemonInformation", True)
-            detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+            detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
             self._daemon_labels.append(detail)
             text.addWidget(detail)
             row_layout.addLayout(text, 1)
@@ -594,7 +594,7 @@ class IOSDaemonsContent(QWidget):
         c = ColorThemeManager.instance().colors
         label = QLabel(title)
         label.setWordWrap(True)
-        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
         self._daemon_labels.append(label)
         if information:
             text = QVBoxLayout()
@@ -602,7 +602,7 @@ class IOSDaemonsContent(QWidget):
             text.addWidget(label)
             detail = QLabel(information)
             detail.setWordWrap(True)
-            detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+            detail.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
             detail.setProperty("daemonInformation", True)
             self._daemon_labels.append(detail)
             text.addWidget(detail)
@@ -654,7 +654,7 @@ class IOSDaemonsContent(QWidget):
                 "Nugget", "blocked (boot-loop protection)"))
             note.setFixedWidth(100)
             note.setWordWrap(True)
-            note.setStyleSheet(f"color: {c.error}; font-size: 12px;")
+            note.setStyleSheet(f"color: {c.error}; font-size: 12px; background-color: transparent;")
             self._forced_notes.append(note)
             row_layout.insertWidget(row_layout.indexOf(switch), note)
 
@@ -667,7 +667,7 @@ class IOSDaemonsContent(QWidget):
             note = QLabel(QCoreApplication.translate("Nugget", "safety rules"))
             note.setFixedWidth(100)
             note.setWordWrap(True)
-            note.setStyleSheet(f"color: {c.error}; font-size: 12px;")
+            note.setStyleSheet(f"color: {c.error}; font-size: 12px; background-color: transparent;")
             self._forced_notes.append(note)
             row_layout.insertWidget(row_layout.indexOf(switch), note)
 
@@ -931,14 +931,14 @@ class IOSDaemonsContent(QWidget):
         self._disabled_hint.setStyleSheet(
             f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         for lbl in self._daemon_labels:
-            lbl.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;" if lbl.property("daemonInformation") else f"color: {c.text_primary}; font-size: 15px;")
+            lbl.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;" if lbl.property("daemonInformation") else f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
         for name, button in self._favorite_buttons.items():
             self._update_favorite(button, name in self._favorites.names())
         for button in self._info_buttons:
             button.setStyleSheet(t("tweak_info_button"))
             button.setIcon(theme_icon(":/icon/questionmark.circle.svg", c.text_secondary))
         for note in self._forced_notes:
-            note.setStyleSheet(f"color: {c.error}; font-size: 12px;")
+            note.setStyleSheet(f"color: {c.error}; font-size: 12px; background-color: transparent;")
         for separator in self._category_lines:
             separator.setStyleSheet(f"background-color: {c.border}; border: none;")
         if hasattr(self, '_screen_time_label'):

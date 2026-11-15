@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
 from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager
 
-from .appearance import GlassChoice, GlassSlider
 from .choice_editor import GlassComboBox as QComboBox
 from .controls import GlassCheckBox, GlassPanel, LiquidButton
 from .placement import panel_rect
@@ -188,19 +187,19 @@ class DeviceDrawer(GlassPanel):
     def retheme(self):
         from src.gui.theme import theme_pixmap
         c=ColorThemeManager.instance().colors
-        self.title.setStyleSheet(f'font-size:17px;font-weight:600;color:{c.text_primary};')
-        self.empty_title.setStyleSheet(f'font-size:16px;font-weight:600;color:{c.text_primary};')
-        self.device_hint.setStyleSheet(f'font-size:12px;color:{c.text_secondary};')
-        self.device_name.setStyleSheet(f'font-size:16px;font-weight:600;color:{c.text_primary};')
-        self.connection.setStyleSheet(f'font-size:12px;color:{c.text_secondary};')
-        self.status.setStyleSheet(f'font-size:12px;color:{c.text_secondary};')
+        self.title.setStyleSheet(f'font-size:17px;font-weight:600;color:{c.text_primary};background:transparent;')
+        self.empty_title.setStyleSheet(f'font-size:16px;font-weight:600;color:{c.text_primary};background:transparent;')
+        self.device_hint.setStyleSheet(f'font-size:12px;color:{c.text_secondary};background:transparent;')
+        self.device_name.setStyleSheet(f'font-size:16px;font-weight:600;color:{c.text_primary};background:transparent;')
+        self.connection.setStyleSheet(f'font-size:12px;color:{c.text_secondary};background:transparent;')
+        self.status.setStyleSheet(f'font-size:12px;color:{c.text_secondary};background:transparent;')
         self.symbol.setPixmap(theme_pixmap(':/icon/phone.svg',c.text_secondary,42,self.devicePixelRatioF()))
         from src.gui.theme import theme_icon
         self.check.setIcon(theme_icon(':/icon/arrow-clockwise.svg',c.text_primary))
         self.check.setStyleSheet(f'QPushButton#liquidButton{{color:{c.text_primary};background:{c.bg_tertiary};border:1px solid rgba(255,255,255,35);border-radius:8px;padding:8px 12px;font-weight:600;}} QPushButton#liquidButton:hover{{border-color:rgba(255,255,255,90);}}')
         for number,label in self.instructions:
             number.setStyleSheet(f'font-size:12px;font-weight:600;color:{c.text_secondary};background:transparent;')
-            label.setStyleSheet(f'font-size:13px;color:{c.text_secondary};')
+            label.setStyleSheet(f'font-size:13px;color:{c.text_secondary};background:transparent;')
 
     def check_connection(self):
         if not self.window.refresh_in_progress:
@@ -221,7 +220,6 @@ class DeviceDrawer(GlassPanel):
         if self.isVisible():
             return
         self.window.bottom_navigation.popup.hide()
-        self.window.liquid.settings.hide()
         self.window.liquid.peek.dismiss()
         self.setGeometry(panel_rect(self.window,self.window.liquid.device_button,self.panel_size(),'bottom'))
         self.clearMask()
@@ -249,211 +247,6 @@ class DeviceDrawer(GlassPanel):
             kind=str(getattr(dev,'connection_type','USB'))
             self.connection.setText('USB connection' if 'USB' in kind.upper() else 'Network connection')
             self.device_name.setText(self.window.ios_home.device_combo.currentText() or 'Connected device')
-
-
-class WorkspaceSettings(GlassPanel):
-    def __init__(self,window):
-        super().__init__(window)
-        self.window=window
-        self.setFixedWidth(420)
-        outer=QVBoxLayout(self)
-        outer.setContentsMargins(4,4,4,4)
-        scroll=QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setStyleSheet('background:transparent;border:none;')
-        body=QWidget()
-        scroll.setWidget(body)
-        outer.addWidget(scroll)
-        column=QVBoxLayout(body)
-        column.setContentsMargins(19,18,19,18)
-        column.setSpacing(16)
-        heading=QHBoxLayout()
-        title=QLabel('App Settings')
-        title.setStyleSheet('font-size:18px;font-weight:650;')
-        title.setWordWrap(True)
-        close=LiquidButton('×')
-        close.setAccessibleName('Close app settings')
-        close.clicked.connect(self.hide)
-        heading.addWidget(title,1)
-        heading.addWidget(close)
-        column.addLayout(heading)
-        full=LiquidButton('All application settings →')
-        full.clicked.connect(lambda:window.bottom_navigation.navigate(4))
-        from PySide6.QtWidgets import QGridLayout
-        grid=QGridLayout()
-        grid.setHorizontalSpacing(14)
-        grid.setVerticalSpacing(16)
-        grid.setColumnStretch(0,1)
-        grid.setColumnStretch(1,1)
-        column.addLayout(grid)
-        self._setting_tiles=[]
-        def field(title,control,row,col,span=1):
-            tile=QWidget()
-            tile.setMinimumWidth(0)
-            stack=QVBoxLayout(tile)
-            stack.setContentsMargins(0,0,0,0)
-            stack.setSpacing(6)
-            if title:
-                caption=QLabel(title)
-                caption.setWordWrap(True)
-                caption.setStyleSheet('font-size:12px;background:transparent;')
-                stack.addWidget(caption)
-            stack.addWidget(control)
-            grid.addWidget(tile,row,col,1,span)
-            self._setting_tiles.append(tile)
-        self.language=QComboBox()
-        self.language.setProperty('liveTranslateItems',True)
-        # Filled from the same table the Settings page uses. Reading the combo
-        # off window.ios_settings built that whole page (the most expensive one)
-        # just to open this panel.
-        from PySide6.QtCore import QCoreApplication
-
-        from src.gui.pages.main.settings import available_languages
-        self._language_codes=list(available_languages.values())
-        for language in available_languages:
-            self.language.addItem(QCoreApplication.translate("Nugget", language))
-        saved=window.settings.value('locale_code','',type=str) or ''
-        self.language.setCurrentIndex(
-            self._language_codes.index(saved) if saved in self._language_codes else 0)
-        self.language.activated.connect(self._on_language_selected)
-        field('Language',self.language,0,0)
-        density=GlassChoice([('compact','Compact'),('comfortable','Comfortable')],
-                            window.settings.value('liquid/card_density','comfortable'))
-        density.setAccessibleName('Card layout')
-        density.changed.connect(lambda value:window.liquid.set_card_density(value))
-        field('Card layout',density,0,1)
-        from .circle_palette import CirclePalette
-        field('Accent color',CirclePalette(),1,0,2)
-        slider=GlassSlider(Qt.Horizontal)
-        slider.setRange(75,100)
-        slider.setValue(int(window.settings.value('liquid/opacity',100)))
-        slider.valueChanged.connect(self.opacity)
-        field('Window opacity',slider,2,0)
-        window.setWindowOpacity(slider.value()/100)
-        edges=GlassChoice([(edge,edge.title()) for edge in ('top','bottom','left','right')],
-                          window.bottom_navigation.edge)
-        edges.setAccessibleName('Dock placement')
-        edges.changed.connect(window.bottom_navigation.set_edge)
-        field('Dock placement',edges,3,0,2)
-        collapse=GlassCheckBox('Auto-collapse')
-        collapse.setChecked(window.settings.value('liquid/collapse_idle',True,type=bool))
-        collapse.toggled.connect(self.set_idle_collapse)
-        field('',collapse,4,0)
-        drawer=QComboBox()
-        drawer.addItems(['Left','Right'])
-        drawer.setCurrentIndex(1 if window.settings.value('liquid/device_edge','left')=='right'else 0)
-        drawer.currentTextChanged.connect(lambda text:window.settings.setValue('liquid/device_edge',text.lower()))
-        field('Device drawer',drawer,2,1)
-        reduced=GlassCheckBox('Reduce motion')
-        reduced.setChecked(window.settings.value('liquid/reduce_motion',False,type=bool))
-        QApplication.instance().setProperty('liquid_reduce_motion', reduced.isChecked())
-        reduced.toggled.connect(self.reduce_motion)
-        field('',reduced,4,1)
-        column.addWidget(full)
-        def retheme():
-            colors=ColorThemeManager.instance().colors
-            self.setStyleSheet('QFrame#liquidPanel{background:transparent;border:none;}'
-                f'QLabel,QComboBox,QLineEdit{{color:{colors.text_primary};}}')
-        ColorThemeManager.instance().theme_changed.connect(retheme)
-        retheme()
-        self.hide()
-
-    def _on_language_selected(self,index):
-        page=self.window.built_page('ios_settings')
-        if page is not None:
-            # The Settings page owns the switch and mirrors both combos.
-            page._on_lang_selected(index)
-            return
-        try:
-            code=self._language_codes[index]
-        except IndexError:
-            return
-        self.window.translator.set_new_language(code)
-
-    def set_idle_collapse(self,value):
-        self.window.settings.setValue('liquid/collapse_idle',value)
-        dock=self.window.bottom_navigation
-        if value:
-            dock._collapse_timer.start()
-        else:
-            dock._collapse_timer.stop()
-            dock.set_expanded(True)
-
-    def reduce_motion(self, value):
-        self.window.settings.setValue('liquid/reduce_motion',value)
-        QApplication.instance().setProperty('liquid_reduce_motion',value)
-
-    def opacity(self,value):
-        self.window.setWindowOpacity(value/100)
-        self.window.settings.setValue('liquid/opacity',value)
-
-    def toggle(self):
-        if self.isVisible():
-            self.hide()
-            return
-        self.open()
-
-    def reposition(self):
-        dock=self.window.bottom_navigation
-        self.clearMask()
-        self.setFixedWidth(min(420,self.window.width()-24))
-        rect=panel_rect(self.window,dock.settings_button,
-                        QSize(self.width(),min(580,self.window.height()-24)),dock.edge)
-        if dock.edge=='left': rect.translate(-8,0)
-        elif dock.edge=='right': rect.translate(8,0)
-        elif dock.edge=='top': rect.translate(0,-8)
-        else: rect.translate(0,8)
-        self.setGeometry(rect)
-
-    def paintEvent(self,event):
-        from PySide6.QtGui import QPainterPath
-
-        from .controls import paint_dock_glass
-        dock=self.window.bottom_navigation
-        rect=QRectF(self.rect()).adjusted(.5,.5,-.5,-.5)
-        edge=dock.edge
-        if edge=='left': rect.adjust(10,0,0,0)
-        elif edge=='right': rect.adjust(0,0,-10,0)
-        elif edge=='top': rect.adjust(0,10,0,0)
-        else: rect.adjust(0,0,0,-10)
-        shape=QPainterPath()
-        shape.addRoundedRect(rect,18,18)
-        point=self.mapFromGlobal(dock.settings_button.mapToGlobal(dock.settings_button.rect().center()))
-        tail=QPainterPath()
-        if edge in ('left','right'):
-            y=max(28,min(point.y(),self.height()-28))
-            x=rect.left() if edge=='left' else rect.right()
-            tip=0 if edge=='left' else self.width()
-            tail.moveTo(x,y-12); tail.quadTo(tip,y,tip,y); tail.quadTo(x,y+3,x,y+12)
-        else:
-            x=max(28,min(point.x(),self.width()-28))
-            y=rect.top() if edge=='top' else rect.bottom()
-            tip=0 if edge=='top' else self.height()
-            tail.moveTo(x-12,y); tail.quadTo(x,tip,x,tip); tail.quadTo(x+3,y,x+12,y)
-        tail.closeSubpath()
-        painter=QPainter(self); painter.setRenderHint(QPainter.Antialiasing)
-        background=QColor(ColorThemeManager.instance().colors.bg_secondary)
-        background.setAlpha(248)
-        painter.fillPath(shape.united(tail),background)
-        paint_dock_glass(painter,shape.united(tail))
-
-    def hideEvent(self,event):
-        finish=getattr(self,'_finish_settings_reveal',None)
-        if finish:
-            finish()
-        super().hideEvent(event)
-
-    def open(self):
-        if self.isVisible():
-            return
-        self.window.liquid.device.hide()
-        dock=self.window.bottom_navigation
-        self.reposition()
-        from .settings_reveal import reveal_settings
-        reveal_settings(self,dock.settings_button,self._setting_tiles)
-
 
 
 class ReviewDevice(QWidget):

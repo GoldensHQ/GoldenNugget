@@ -288,7 +288,7 @@ class IOSSectionContent(QWidget):
             label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
             self._switch_labels.append(label)
             label.setStyleSheet(
-                f"color: {ColorThemeManager.instance().colors.text_secondary}; font-size: 13px;")
+                f"color: {ColorThemeManager.instance().colors.text_secondary}; font-size: 13px; background-color: transparent;")
             return label
 
         # Helper to create a switch row for boolean tweaks
@@ -309,7 +309,7 @@ class IOSSectionContent(QWidget):
             c = ColorThemeManager.instance().colors
             label = QLabel(title)
             label.setWordWrap(True)
-            label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+            label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
             self._switch_labels.append(label)
             text_layout = QVBoxLayout()
             text_layout.setSpacing(4)
@@ -383,7 +383,7 @@ class IOSSectionContent(QWidget):
             text_layout=QVBoxLayout()
             label=QLabel(title)
             label.setWordWrap(True)
-            label.setStyleSheet(f'color:{ColorThemeManager.instance().colors.text_primary};font-size:15px;')
+            label.setStyleSheet(f'color:{ColorThemeManager.instance().colors.text_primary};font-size:15px;background-color:transparent;')
             self._switch_labels.append(label)
             text_layout.addWidget(label)
             if description:
@@ -741,13 +741,13 @@ class IOSSectionContent(QWidget):
 
     def _retheme(self):
         c = ColorThemeManager.instance().colors
-        self._description_note.setStyleSheet(f"color: {c.text_secondary}; font-size: 12px;")
+        self._description_note.setStyleSheet(f"color: {c.text_secondary}; font-size: 12px; background-color: transparent;")
         self.filter_control._retheme()
         for lbl in self._switch_labels:
             secondary = bool(lbl.property("tweakDescription"))
             color = c.text_secondary if secondary else c.text_primary
             size = 13 if secondary else 15
-            lbl.setStyleSheet(f"color: {color}; font-size: {size}px;")
+            lbl.setStyleSheet(f"color: {color}; font-size: {size}px; background-color: transparent;")
         for line in self._category_lines:
             line.setStyleSheet(f"background-color: {c.border}; border: none;")
         for button in self._info_buttons:

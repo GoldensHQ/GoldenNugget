@@ -185,11 +185,11 @@ class RestoreChangesPanel(GlassPanel):
         colors = ColorThemeManager.instance().colors
         for card in self.page_switches.values():
             card.update()
-        self.title.setStyleSheet(f'font-size:18px;font-weight:600;color:{colors.text_primary};')
-        self.device.setStyleSheet(f'font-size:13px;color:{colors.text_secondary};')
+        self.title.setStyleSheet(f'font-size:18px;font-weight:600;color:{colors.text_primary};background:transparent;')
+        self.device.setStyleSheet(f'font-size:13px;color:{colors.text_secondary};background:transparent;')
         for label in (self.description, self.summary):
-            label.setStyleSheet(f'font-size:13px;color:{colors.text_secondary};')
-        self.warning.setStyleSheet(f'font-size:12px;color:{colors.warning};')
+            label.setStyleSheet(f'font-size:13px;color:{colors.text_secondary};background:transparent;')
+        self.warning.setStyleSheet(f'font-size:12px;color:{colors.warning};background:transparent;')
         self.description_icon.setPixmap(theme_pixmap(':/icon/gear.svg',colors.text_secondary,22,self.devicePixelRatioF()))
         self.warning_icon.setPixmap(theme_pixmap(':/icon/cable.svg',colors.warning,22,self.devicePixelRatioF()))
 

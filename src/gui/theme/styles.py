@@ -295,15 +295,22 @@ STYLES = {
     """,
     "segmented_filter": """
         QWidget#iosSegmentedFilter {{
-            background-color: {bg_secondary}; border: 1px solid {border}; border-radius: 12px;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {bg_tertiary}, stop:0.12 {bg_secondary}, stop:1 {bg_secondary});
+            border: 1px solid rgba(255, 255, 255, 40); border-radius: 12px;
         }}
         QWidget#iosSegmentedFilter QPushButton {{
             background: transparent; border: none; border-radius: 8px;
             padding: 0px 12px; color: {text_secondary}; font-size: 13px; font-weight: 500;
         }}
-        QWidget#iosSegmentedFilter QPushButton:hover {{ color: {text_primary}; }}
+        QWidget#iosSegmentedFilter QPushButton:hover {{
+            color: {text_primary}; background: rgba(255, 255, 255, 20);
+        }}
         QWidget#iosSegmentedFilter QPushButton:checked {{
-            background: {bg_tertiary}; color: {text_primary}; font-weight: 600;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 rgba(255, 255, 255, 45), stop:1 {bg_tertiary});
+            border: 1px solid rgba(255, 255, 255, 90);
+            color: {text_primary}; font-weight: 600;
         }}
     """,
     "list_search_empty": """

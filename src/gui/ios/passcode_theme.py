@@ -473,7 +473,7 @@ class IOSPasscodeThemePage(QWidget):
                 "No trusted iPhone connected. Plug it in, unlock it, tap "
                 "\u201cTrust This Computer\u201d when iOS asks, and wait for it "
                 "to appear here."))
-            self._device_lbl.setStyleSheet(f"color: {c.error}; font-size: 13px;")
+            self._device_lbl.setStyleSheet(f"color: {c.error}; font-size: 13px; background-color: transparent;")
             return
         version = getattr(device, "version", "")
         build = getattr(device, "build", "")
@@ -483,12 +483,12 @@ class IOSPasscodeThemePage(QWidget):
             "the write runs immediately — no \u201cTrust This Computer\u201d "
             "pop-up will appear.").format(
                 model or QCoreApplication.translate("Nugget", "iPhone"), version or "?", build or "?"))
-        self._device_lbl.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+        self._device_lbl.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         if not dm.data_singleton.device_available:
             self._device_lbl.setText(QCoreApplication.translate("Nugget", 
                 "Device present, but it is not supported for AirLift (needs an "
                 "iPhone on iOS 26.2+)."))
-            self._device_lbl.setStyleSheet(f"color: {c.error}; font-size: 13px;")
+            self._device_lbl.setStyleSheet(f"color: {c.error}; font-size: 13px; background-color: transparent;")
 
     def start_write(self):
         reason = current_passcode_theme_reason(self.window.device_manager)
@@ -580,7 +580,7 @@ class IOSPasscodeThemePage(QWidget):
         c = ColorThemeManager.instance().colors
         self._scroll.setStyleSheet(
             f"background-color: {c.bg_primary}; border: none;")
-        self._hint.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+        self._hint.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         self.theme_placeholder.setStyleSheet(
             f"color: {c.text_secondary}; font-size: 15px; padding: 24px 0;")
         self._lang_combo.setStyleSheet(

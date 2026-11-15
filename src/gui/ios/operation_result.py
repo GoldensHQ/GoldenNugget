@@ -147,8 +147,8 @@ class OperationResultCard(LiquidCard):
         colors = ColorThemeManager.instance().colors
         self.find_my_reminder.setStyleSheet(
             f"background: {colors.bg_tertiary}; border-radius: 12px;")
-        self.find_my_title.setStyleSheet(f"color: {colors.text_primary}; font-size: 15px; font-weight: 600;")
-        self.find_my_description.setStyleSheet(f"color: {colors.text_secondary}; font-size: 13px;")
+        self.find_my_title.setStyleSheet(f"color: {colors.text_primary}; font-size: 15px; font-weight: 600; background-color: transparent;")
+        self.find_my_description.setStyleSheet(f"color: {colors.text_secondary}; font-size: 13px; background-color: transparent;")
         self.find_my_icon.setPixmap(theme_pixmap(":/icon/find-my.svg", colors.success, 40, self.devicePixelRatioF()))
         self.details.setStyleSheet(t("apply_preview_text"))
         self.log_details.setStyleSheet(t("apply_preview_text"))

@@ -23,7 +23,7 @@ from awesomeui.liquid.reveal import DevicePeek, PageReveal
 from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager
 
-from .panels import DeviceDrawer, RestoreDrawer, WorkspaceSettings
+from .panels import DeviceDrawer, RestoreDrawer
 
 _DEVICE_NAMES: dict | None = None
 
@@ -76,11 +76,13 @@ class LiquidExperience(QObject):
         super().__init__(window)
         self.window=window
         QApplication.instance().setProperty("liquid_card_density",window.settings.value("liquid/card_density","comfortable"))
+        # Was set by the removed App Settings drawer; the Settings page owns
+        # the switch now, but the property must exist before any animation.
+        QApplication.instance().setProperty("liquid_reduce_motion",window.settings.value("liquid/reduce_motion",False,type=bool))
         self.home=window.ios_home
         self.last_device=''
         self.update_shown=False
         self.device=DeviceDrawer(window)
-        self.settings=WorkspaceSettings(window)
         self.restore=RestoreDrawer(window)
         from .dock_gear import DockGear
         self.dock_gear=DockGear(window)
@@ -245,7 +247,7 @@ class LiquidExperience(QObject):
             elif kind==QEvent.Leave:
                 self.peek.hide_timer.start(500)
         if kind==QEvent.KeyPress and event.key()==Qt.Key_Escape:
-            panels=[self.window.bottom_navigation.popup,self.settings,self.device,self.restore,self.restore_changes_panel]
+            panels=[self.window.bottom_navigation.popup,self.device,self.restore,self.restore_changes_panel]
             if any(panel.isVisible() for panel in panels):
                 for panel in panels:
                     panel.hide()
@@ -256,8 +258,6 @@ class LiquidExperience(QObject):
             self.border.setGeometry(self.window.rect())
             if self.restore.isVisible():
                 self.restore.reposition()
-            if self.settings.isVisible():
-                self.settings.reposition()
             if self.device.isVisible():
                 self.device.reposition()
         if kind==QEvent.MouseButtonPress and isinstance(target,QAbstractButton):
@@ -275,11 +275,6 @@ class LiquidExperience(QObject):
         if kind==QEvent.MouseButtonPress and target is self.window:
             self.window.bottom_navigation.popup.hide()
         return False
-
-    def open_settings(self):
-        self.window.bottom_navigation.popup.hide()
-        self.window.bottom_navigation.set_expanded(True)
-        self.settings.toggle()
 
     def page_transition(self,*args):
         self.window._stop_page_slide()

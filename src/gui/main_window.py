@@ -690,7 +690,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # Device picker keeps its default stylesheet (classic look).
 
         # Version link inherits white from the shell defaults — restyle to text_secondary
-        self.ui.phoneNameLbl.setStyleSheet(f"color: {c.text_primary};")
+        self.ui.phoneNameLbl.setStyleSheet(f"color: {c.text_primary}; background-color: transparent;")
         self.ui.phoneVersionLbl.setText(
             f'<a style="text-decoration:none; color:{c.text_secondary}" href="#">Version</a>')
 

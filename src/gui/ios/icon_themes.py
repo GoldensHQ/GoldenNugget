@@ -148,7 +148,7 @@ class IOSIconThemesPage(QWidget):
         self._add_btn.setStyleSheet(t("primary_button") + "QPushButton { padding: 0px 16px; font-size: 14px; }")
         self._scroll.setStyleSheet(
             f"background-color: {c.bg_primary}; border: none;")
-        self._hint.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+        self._hint.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         self._download_btn.setStyleSheet(f"""
             QPushButton#downloadIconPacks {{
                 background-color: {c.bg_secondary};

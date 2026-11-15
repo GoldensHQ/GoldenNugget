@@ -41,8 +41,9 @@ class RemoveOption(TemplateOption):
                         # TODO: make sure it isn't a directory
                         delete_xml_value(file=full_path, id=self.identifier, use_ca_id=self.use_ca_id)
                     else:
-                        # delete files or directories
+                        # delete files or directories (a missing match is a
+                        # template-authoring slip, not an error)
                         if os.path.isdir(full_path):
                             rmtree(path=full_path, ignore_errors=True)
-                        else:
+                        elif os.path.exists(full_path):
                             os.remove(path=full_path)

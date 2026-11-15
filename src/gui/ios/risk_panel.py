@@ -59,4 +59,4 @@ class RiskPanel(QFrame):
                 color: {c.text_secondary}; font-size: 13px; }}
             QLabel#riskTitle {{ color: {c.text_primary}; font-size: 15px; font-weight: 700; }}
         """)
-        self._dot.setStyleSheet(f"color: {color}; font-size: 15px;")
+        self._dot.setStyleSheet(f"color: {color}; font-size: 15px; background-color: transparent;")

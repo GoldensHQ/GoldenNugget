@@ -156,13 +156,8 @@ class LiquidDock(GlassPanel):
         self.more.setProperty('dockReveal',0.0)
         self.more.setToolTip('More')
         self.more.clicked.connect(self.open_more)
-        self.settings_button=self.make_button('App Settings',parent=self)
-        self.settings_button.setProperty('dockReveal',0.0)
-        self.settings_button.setIcon(theme_icon(':/icon/gear.svg','#dce0e8'))
-        self.settings_button.setAccessibleName('App Settings')
-        self.settings_button.clicked.connect(lambda:window.liquid.open_settings())
         self._utility_motions={}
-        for button in (self.more,self.settings_button):
+        for button in (self.more,):
             motion=QVariantAnimation(self)
             motion.setEasingCurve(QEasingCurve.OutCubic)
             motion.valueChanged.connect(lambda value,b=button:self._utility_step(b,value))
@@ -279,11 +274,11 @@ class LiquidDock(GlassPanel):
 
     def _items(self):
         order=self._preview_order if self._preview_order is not None else self.order
-        return [self.buttons[key] for key in order]+[self.more,self.settings_button]
+        return [self.buttons[key] for key in order]+[self.more]
 
     def position(self,animate_items=False):
         key=(self.window.size(),self.edge,round(self._amount,4),
-             tuple(round(float(button.property('dockReveal')),4) for button in (self.more,self.settings_button)),
+             (round(float(self.more.property('dockReveal')),4),),
              tuple(self.order),tuple(self._preview_order or ()),
              tuple(button.text() for button in self._items()))
         if not animate_items and getattr(self,'_layout_key',None)==key:
@@ -300,18 +295,17 @@ class LiquidDock(GlassPanel):
                 continue
             if vertical:
                 extent=40
-            elif button in (self.more,self.settings_button):
+            elif button is self.more:
                 extra=max(56,button.fontMetrics().horizontalAdvance(button.text())+14)
                 extent=round(38+extra*float(button.property('dockReveal')))
             else:
                 extent=max(86,button.sizeHint().width()+4)
-            if button in (self.more,self.settings_button) or total+extent+100<available:
+            if button is self.more or total+extent+100<available:
                 visible.append((button,extent))
                 total+=extent+3
         for button in self.buttons.values():
             button.setVisible(any(button is item[0] for item in visible))
-        for button in (self.more,self.settings_button):
-            button.show()
+        self.more.show()
         amount=self._amount
         expanded_width=64 if vertical else 180+total+8
         expanded_height=min(bounds.height(),64+total) if vertical else 56
@@ -373,7 +367,7 @@ class LiquidDock(GlassPanel):
                 self._drag_drop_position=event.globalPosition().toPoint()
             elif kind==QEvent.Drop and isinstance(watched,QWidget):
                 self._drag_drop_position=watched.mapToGlobal(event.position().toPoint())
-        if watched in (self.more,self.settings_button) and self.edge in ('top','bottom'):
+        if watched is self.more and self.edge in ('top','bottom'):
             if kind in (QEvent.Enter,QEvent.FocusIn):
                 self._reveal_utility(watched,True)
             elif kind in (QEvent.Leave,QEvent.FocusOut):
@@ -550,7 +544,6 @@ class LiquidDock(GlassPanel):
             self.popup.hide()
             return
         self.set_expanded(True)
-        self.window.liquid.settings.hide()
         self._panel='more'
         self._populate_more()
         self._show_popup(self.more)
@@ -593,7 +586,6 @@ class LiquidDock(GlassPanel):
         if self.popup.isVisible()and getattr(self,'_panel','')=='presets':
             self.popup.hide()
             return
-        self.window.liquid.settings.hide()
         self._panel='presets'
         self._clear_popup('Your presets')
         try:
@@ -637,9 +629,6 @@ class LiquidDock(GlassPanel):
                for name,_,index in ENTRIES.values()):
             return
         self.popup.hide()
-        liquid=getattr(self.window,'liquid',None)
-        if liquid is not None:
-            liquid.settings.hide()
         if self.window.ios_pages.currentIndex()==page:
             return
         self.window.show_ios_page(page)
@@ -688,8 +677,7 @@ class LiquidDock(GlassPanel):
             return
         if not self.window.settings.value('liquid/collapse_idle',True,type=bool):
             return
-        settings=getattr(getattr(self.window,'liquid',None),'settings',None)
-        if not self.underMouse()and not self.popup.isVisible()and not(settings and settings.isVisible())and not self._drag_source:
+        if not self.underMouse()and not self.popup.isVisible()and not self._drag_source:
             self.set_expanded(False)
 
     def set_expanded(self,value):
@@ -713,5 +701,3 @@ class LiquidDock(GlassPanel):
         if hasattr(self.window,'liquid'):
             self.window.liquid.reserve_dock_space()
             self.window.liquid.position_device()
-            if self.window.liquid.settings.isVisible():
-                self.window.liquid.settings.reposition()

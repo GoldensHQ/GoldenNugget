@@ -11,6 +11,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import (
     QAbstractButton,
+    QApplication,
     QDialog,
     QFileDialog,
     QGraphicsOpacityEffect,
@@ -47,6 +48,7 @@ from src.gui.ios.preset_menu import (
     rollback_preset_flow,
     save_preset_flow,
 )
+from src.gui.liquid.appearance import GlassSlider
 from src.gui.pages.main.settings import available_languages
 from src.gui.theme import AccentPicker, ColorThemeManager, t, theme_icon
 from src.gui.thread_workers.apply_worker import ResetPairingThread
@@ -122,6 +124,10 @@ class IOSSettingsPage(QWidget):
         self._accent_picker = AccentPicker()
         accent_row.addWidget(self._accent_picker)
         self.content_layout.addWidget(accent_row_card)
+
+        # --- Interface (merged from the liquid "App Settings" drawer) ---
+        self.content_layout.addWidget(IOSSectionHeader(QCoreApplication.translate("Nugget", "Interface")))
+        self._make_interface_rows()
 
         # TEMP: Classic UI removed — the "iOS-style Interface" and "Show
         # Sidebar" switches are gone with them; the app is pinned to the
@@ -406,6 +412,8 @@ class IOSSettingsPage(QWidget):
         self.app_log_btn.setIcon(theme_icon(":/icon/file-earmark-text.svg", c.text_primary))
         if hasattr(self, '_lang_drp'):
             self._retheme_lang_dropdown()
+        for combo in getattr(self, '_dropdowns', []):
+            self._style_dropdown(combo)
         if hasattr(self, '_saved_ids_list'):
             self._retheme_saved_ids_list()
         if hasattr(self, 'history_count_lbl'):
@@ -417,8 +425,11 @@ class IOSSettingsPage(QWidget):
             button.setIcon(theme_icon(":/icon/edit-value.svg", c.text_secondary))
 
     def _retheme_lang_dropdown(self):
+        self._style_dropdown(self._lang_drp)
+
+    def _style_dropdown(self, combo):
         c = self._tm.colors
-        self._lang_drp.setStyleSheet(f"""
+        combo.setStyleSheet(f"""
             QComboBox {{
                 background-color: {c.bg_tertiary};
                 border: 1px solid {c.border};
@@ -863,13 +874,109 @@ class IOSSettingsPage(QWidget):
         if new_lang != current_choice:
             self.window.translator.set_new_language(new_lang)
             from PySide6.QtCore import QSignalBlocker
-            liquid = getattr(self.window, 'liquid', None)
-            panel = getattr(liquid, 'settings', None)
-            for combo in (getattr(self, 'lang_drp', None), getattr(panel, 'language', None)):
-                if combo is not None:
-                    blocker = QSignalBlocker(combo)
-                    combo.setCurrentIndex(index)
-                    del blocker
+            combo = getattr(self, 'lang_drp', None)
+            if combo is not None:
+                blocker = QSignalBlocker(combo)
+                combo.setCurrentIndex(index)
+                del blocker
+
+    # -- interface (merged from the liquid "App Settings" drawer) ----------- #
+
+    def _make_interface_rows(self):
+        self._dropdowns = []
+
+        def combo_row(title, options, current, on_activate):
+            card = LiquidCard()
+            row = QHBoxLayout(card)
+            row.setContentsMargins(16, 12, 16, 12)
+            row.setSpacing(12)
+            label = QLabel(title)
+            self._style_label(label, 'row_title')
+            row.addWidget(label, 1)
+            combo = QComboBox()
+            combo.setAccessibleName(title)
+            for text, data in options:
+                combo.addItem(text, data)
+            combo.setCurrentIndex(max(0, combo.findData(current)))
+            combo.activated.connect(lambda index, c=combo: on_activate(c.itemData(index)))
+            row.addWidget(combo)
+            self._dropdowns.append(combo)
+            self.content_layout.addWidget(card)
+
+        combo_row(
+            QCoreApplication.translate("Nugget", "Card Layout"),
+            [(QCoreApplication.translate("Nugget", "Compact"), "compact"),
+             (QCoreApplication.translate("Nugget", "Comfortable"), "comfortable")],
+            self.window.settings.value("liquid/card_density", "comfortable"),
+            self._set_card_density)
+
+        slider = GlassSlider(Qt.Horizontal)
+        slider.setRange(75, 100)
+        slider.setValue(int(self.window.settings.value("liquid/opacity", 100)))
+        slider.valueChanged.connect(self._set_window_opacity)
+        self._make_control_row(QCoreApplication.translate("Nugget", "Window Opacity"), slider)
+
+        combo_row(
+            QCoreApplication.translate("Nugget", "Dock Placement"),
+            [(edge.title(), edge) for edge in ("top", "bottom", "left", "right")],
+            self.window.bottom_navigation.edge,
+            self._set_dock_edge)
+
+        self._make_switch(
+            QCoreApplication.translate("Nugget", "Auto-collapse Dock"),
+            self.window.settings.value("liquid/collapse_idle", True, type=bool),
+            self._on_collapse_idle_toggled)
+
+        combo_row(
+            QCoreApplication.translate("Nugget", "Device Drawer"),
+            [(QCoreApplication.translate("Nugget", "Left"), "left"),
+             (QCoreApplication.translate("Nugget", "Right"), "right")],
+            self.window.settings.value("liquid/device_edge", "left"),
+            self._set_device_drawer_side)
+
+        self._make_switch(
+            QCoreApplication.translate("Nugget", "Reduce Motion"),
+            self.window.settings.value("liquid/reduce_motion", False, type=bool),
+            self._on_reduce_motion_toggled)
+
+    def _make_control_row(self, title, control):
+        card = LiquidCard()
+        row = QHBoxLayout(card)
+        row.setContentsMargins(16, 12, 16, 12)
+        row.setSpacing(12)
+        label = QLabel(title)
+        self._style_label(label, 'row_title')
+        label.setWordWrap(True)
+        row.addWidget(label, 1)
+        row.addWidget(control)
+        self.content_layout.addWidget(card)
+
+    def _set_card_density(self, value):
+        self.window.settings.setValue("liquid/card_density", value)
+        self.window.liquid.set_card_density(value)
+
+    def _set_window_opacity(self, value):
+        self.window.setWindowOpacity(value / 100)
+        self.window.settings.setValue("liquid/opacity", value)
+
+    def _set_dock_edge(self, edge):
+        self.window.bottom_navigation.set_edge(edge)
+
+    def _set_device_drawer_side(self, side):
+        self.window.settings.setValue("liquid/device_edge", side)
+
+    def _on_collapse_idle_toggled(self, checked):
+        dock = self.window.bottom_navigation
+        self.window.settings.setValue("liquid/collapse_idle", checked)
+        if checked:
+            dock._collapse_timer.start()
+        else:
+            dock._collapse_timer.stop()
+            dock.set_expanded(True)
+
+    def _on_reduce_motion_toggled(self, checked):
+        self.window.settings.setValue("liquid/reduce_motion", checked)
+        QApplication.instance().setProperty("liquid_reduce_motion", checked)
 
     def _make_pb_setup_section(self):
         self.content_layout.addWidget(IOSSectionHeader(

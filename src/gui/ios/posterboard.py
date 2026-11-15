@@ -16,8 +16,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.controls import IOSSegmentedFilter
 from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox  # noqa: F811 (intentional: swap in glass combos)
-from awesomeui.liquid.controls import LiquidActionButton, LiquidCard, LiquidSwitch
+from awesomeui.liquid.controls import (
+    LiquidActionButton,
+    LiquidCard,
+    LiquidSwitch,
+)
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.tweaks.tweaks import TweakID, tweaks
 
@@ -217,24 +222,28 @@ class IOSPosterboardPage(QWidget):
         self.preferences_page=IOSSectionPage(window,Section.POSTERBOARD)
         self.tab_stack.addWidget(self.preferences_page)
 
-        # Tab bar on top, sharing its row with "Check Package…": a mobile-style
-        # bottom bar sat in the middle of the window, above the reset footer,
-        # and left the check button floating alone under the header.
+        # Tab row: the house segmented pill (the same control Tweaks/Daemons
+        # use), sharing the row with "Check Package…". A mobile-style bottom
+        # bar used to sit mid-window and left the check button floating alone
+        # under the header.
         self._tab_bar = QWidget()
-        self._tab_bar.setObjectName("pbTabBar")
-        self._tab_bar.setFixedHeight(52)
+        self._tab_bar.setFixedHeight(60)
         tab_layout = QHBoxLayout(self._tab_bar)
-        tab_layout.setContentsMargins(16, 8, 16, 4)
-        tab_layout.setSpacing(4)
+        tab_layout.setContentsMargins(16, 10, 16, 6)
+        tab_layout.setSpacing(8)
 
-        self.tendies_tab_btn = self._make_tab_button(QCoreApplication.translate("Nugget", "Tendies"), ":/icon/wallpaper.svg", 0)
-        self.video_tab_btn = self._make_tab_button(QCoreApplication.translate("Nugget", "Video"), ":/icon/play-circle.svg", 1)
-
-        tab_layout.addWidget(self.tendies_tab_btn)
-        tab_layout.addWidget(self.video_tab_btn)
-        self.preferences_tab_btn=self._make_tab_button(self.tr('Preferences'),':/icon/wallpaper.svg',2)
-        tab_layout.addWidget(self.preferences_tab_btn)
-        tab_layout.addStretch()
+        self._tab_filter = IOSSegmentedFilter([
+            (QCoreApplication.translate("Nugget", "Tendies"), 0),
+            (QCoreApplication.translate("Nugget", "Video"), 1),
+            (self.tr('Preferences'), 2),
+        ])
+        # Kept as attributes: existing code (and tests) click these buttons.
+        self.tendies_tab_btn = self._tab_filter.button(0)
+        self.video_tab_btn = self._tab_filter.button(1)
+        self.preferences_tab_btn = self._tab_filter.button(2)
+        self._tab_filter.currentIndexChanged.connect(self._switch_tab)
+        tab_layout.addWidget(self._tab_filter, 1)
+        self._check_btn.setFixedHeight(34)
         tab_layout.addWidget(self._check_btn)
 
         layout.addWidget(self._tab_bar)
@@ -258,29 +267,8 @@ class IOSPosterboardPage(QWidget):
         self._check_btn.setStyleSheet(t('mini_button'))
         self._reset_btn.setStyleSheet(t("maintenance_button"))
         self._reset_caption.setStyleSheet(f"color: {c.text_secondary}; font-size: 12px; background-color: transparent;")
-        self._tab_bar.setStyleSheet(
-            f"QWidget#pbTabBar {{ background-color: {c.bg_primary}; }}"
-        )
-        for btn in (self.tendies_tab_btn, self.video_tab_btn,self.preferences_tab_btn):
-            btn.setStyleSheet(f"""
-                QToolButton {{
-                    background: transparent;
-                    color: {c.text_secondary};
-                    font-size: 13px;
-                    font-weight: 600;
-                    padding: 6px 12px;
-                    border: none;
-                    border-radius: 8px;
-                }}
-                QToolButton:hover {{ background-color: {c.surface_hover}; }}
-                QToolButton:checked {{
-                    color: {c.accent};
-                    background-color: {c.bg_tertiary};
-                }}
-            """)
         self._retheme_tendies_tab()
         self._retheme_video_tab()
-        self._update_tab_icons()
 
     def _retheme_tendies_tab(self):
         c = ColorThemeManager.instance().colors
@@ -367,30 +355,9 @@ class IOSPosterboardPage(QWidget):
                 }}
             """)
 
-    def _make_tab_button(self, text: str, icon_path: str, index: int) -> QToolButton:
-        btn = QToolButton()
-        btn.setText(text)
-        btn.setIconSize(QSize(18, 18))
-        btn.setProperty('icon_resource', icon_path)
-        btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn.setCheckable(True)
-        btn.setAutoExclusive(True)
-        btn.setCursor(Qt.PointingHandCursor)
-        btn.clicked.connect(lambda: self._switch_tab(index))
-        return btn
-
     def _switch_tab(self, index: int):
+        self._tab_filter.setCurrentIndex(index)
         self.tab_stack.setCurrentIndex(index)
-        self.tendies_tab_btn.setChecked(index == 0)
-        self.video_tab_btn.setChecked(index == 1)
-        self.preferences_tab_btn.setChecked(index == 2)
-        self._update_tab_icons()
-
-    def _update_tab_icons(self):
-        c = ColorThemeManager.instance().colors
-        for button in (self.tendies_tab_btn, self.video_tab_btn,self.preferences_tab_btn):
-            color = c.accent if button.isChecked() else c.text_secondary
-            button.setIcon(QIcon(theme_pixmap(button.property('icon_resource'), color, 18, self.devicePixelRatioF())))
 
     def _create_tendies_tab(self) -> QWidget:
         self._tendies_scroll = QScrollArea()

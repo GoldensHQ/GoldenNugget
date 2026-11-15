@@ -46,6 +46,19 @@ class AwesomeUIIntegration(unittest.TestCase):
                 ):
                     self.assertTrue(node.lineno in guarded, path.name)
 
+    def test_widget_style_switch(self):
+        from awesomeui import Card, Sidebar, set_widget_style, widget_style
+        self.assertEqual(widget_style(), 'liquid')
+        self.assertIn('rgba(', Card('T').styleSheet())
+        self.assertIn('rgba(', Sidebar().styleSheet())
+        set_widget_style('classic')
+        try:
+            self.assertIn('background: #20242b', Card('T').styleSheet())
+            self.assertIn('#15181e', Sidebar().styleSheet())
+        finally:
+            set_widget_style('liquid')
+        self.assertIn('rgba(', Sidebar().styleSheet())
+
     def test_main_window_navigation_gating_and_live_theme(self):
         from src.devicemanagement.device_manager import DeviceManager
         from src.gui.main_window import MainWindow
@@ -79,7 +92,9 @@ class AwesomeUIIntegration(unittest.TestCase):
                         self.assertEqual(window.ios_pages.currentIndex(), index)
                         self.assertEqual(window.ui.sidebar.current_item_id(), name)
                         self.assertIs(getattr(window.ui, name), window.ui.sidebar.item(name))
-                    self.assertIs(window.ios_pages.widget(14), window.ios_templates)
+                    # attribute first: it resolves the lazy slot deterministically
+                    # (widget(14) alone races the deferred first-open build)
+                    self.assertIs(window.ios_templates, window.ios_pages.widget(14))
                     self.assertEqual(window.ios_posterboard.tab_stack.count(), 3)
                     window.ios_posterboard.video_tab_btn.click()
                     self.assertIs(window.ios_posterboard.tab_stack.currentWidget(),
@@ -120,8 +135,8 @@ class AwesomeUIIntegration(unittest.TestCase):
                     APP.processEvents()
                     self.assertEqual(window.ui.sidebar.theme().active_indicator,
                                      ColorThemeManager.instance().accent_hex())
-                    self.assertIn(ColorThemeManager.instance().colors.bg_secondary,
-                                  window.ui.sidebar.styleSheet())
+                    self.assertEqual(window.ui.sidebar.theme().background,
+                                     ColorThemeManager.instance().colors.bg_secondary)
                     self.assertEqual(len(window.ui.sidebar._items), len(NavigationSidebar.ITEM_NAMES))
                     window.ui.sidebar.hide()
                     APP.processEvents()

@@ -324,8 +324,8 @@ class IOSStatusBarPage(QWidget):
         self._master_title = title
         self._master_detail = detail
         colors = ColorThemeManager.instance().colors
-        title.setStyleSheet(f'color:{colors.text_primary};font-size:15px;')
-        detail.setStyleSheet(f'color:{colors.text_secondary};font-size:13px;')
+        title.setStyleSheet(f'color:{colors.text_primary};font-size:15px;background-color:transparent;')
+        detail.setStyleSheet(f'color:{colors.text_secondary};font-size:13px;background-color:transparent;')
         text.addWidget(title)
         text.addWidget(detail)
         row.addLayout(text, 1)
@@ -395,8 +395,8 @@ class IOSStatusBarPage(QWidget):
 
     def _retheme(self):
         c = ColorThemeManager.instance().colors
-        self._master_title.setStyleSheet(f'color:{c.text_primary};font-size:15px;')
-        self._master_detail.setStyleSheet(f'color:{c.text_secondary};font-size:13px;')
+        self._master_title.setStyleSheet(f'color:{c.text_primary};font-size:15px;background-color:transparent;')
+        self._master_detail.setStyleSheet(f'color:{c.text_secondary};font-size:13px;background-color:transparent;')
         self._scroll.setStyleSheet(f"background-color: {c.bg_primary}; border: none;")
         # Transparent background so it does not read as a dark box, muted text
         # because it is a note rather than a value.
@@ -418,11 +418,11 @@ class IOSStatusBarPage(QWidget):
                     if isinstance(w, QLabel):
                         current = w.styleSheet()
                         if "font-size: 15px" in current:
-                            w.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+                            w.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
                         elif "font-size: 14px" in current:
-                            w.setStyleSheet(f"color: {c.text_secondary}; font-size: 14px;")
+                            w.setStyleSheet(f"color: {c.text_secondary}; font-size: 14px; background-color: transparent;")
                         elif "font-size: 17px" in current:
-                            w.setStyleSheet(f"color: {c.accent}; font-size: 17px;")
+                            w.setStyleSheet(f"color: {c.accent}; font-size: 17px; background-color: transparent;")
             for button in widget.findChildren(QPushButton):
                 if button.objectName() == "statusBarEdit":
                     button.setStyleSheet(t("tweak_info_button"))
@@ -473,7 +473,7 @@ class IOSStatusBarPage(QWidget):
         row.setSpacing(12)
         label = QLabel(title)
         label.setWordWrap(True)
-        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
         row.addWidget(label, 1)
         switch = LiquidSwitch(checked)
         switch.toggled.connect(on_toggled)
@@ -492,7 +492,7 @@ class IOSStatusBarPage(QWidget):
 
         label = QLabel(title)
         label.setWordWrap(True)
-        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
         row.addWidget(label, 1)
 
         card.setProperty("overrideValue", current)
@@ -560,7 +560,7 @@ class IOSStatusBarPage(QWidget):
 
         label = QLabel(title)
         label.setWordWrap(True)
-        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px;")
+        label.setStyleSheet(f"color: {c.text_primary}; font-size: 15px; background-color: transparent;")
         row.addWidget(label, 1)
 
         card.setProperty("overrideValue", current)

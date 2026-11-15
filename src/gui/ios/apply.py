@@ -46,7 +46,7 @@ class IOSApplyPage(QWidget):
             "when done. If you turn Find My off for this apply, turn it back "
             "on afterwards."))
         apply_desc.setWordWrap(True)
-        apply_desc.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+        apply_desc.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         self.apply_desc = apply_desc
         apply_layout.addWidget(apply_desc)
 
@@ -82,7 +82,7 @@ class IOSApplyPage(QWidget):
             "Nugget",
             "Restores the original values for the tweak pages you pick."))
         remove_desc.setWordWrap(True)
-        remove_desc.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px;")
+        remove_desc.setStyleSheet(f"color: {c.text_secondary}; font-size: 13px; background-color: transparent;")
         self.remove_desc = remove_desc
         remove_layout.addWidget(remove_desc)
 

@@ -78,6 +78,15 @@ class TemplateControls(unittest.TestCase):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 self.make_picker(**kwargs)
 
+    def test_picker_ignores_a_listed_file_missing_from_the_package(self):
+        # a template-authoring slip (file listed but not packaged) must not
+        # abort the apply; the delete itself still runs
+        option = self.make_picker(default_value=0)
+        with tempfile.TemporaryDirectory() as folder:
+            Path(folder, "second.txt").write_text("second")
+            option.apply(folder)
+            self.assertFalse(Path(folder, "second.txt").exists())
+
     def test_replace_layout_is_owned_by_its_row(self):
         option = ReplaceOption(dict(type="replace", label="Image", files=["image.png"],
                                     allowed_files="Images (*.png)"))
