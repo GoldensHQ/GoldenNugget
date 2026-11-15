@@ -15,6 +15,7 @@ import os
 import ssl
 import time
 import urllib.request
+from pathlib import Path
 from typing import Optional
 
 from src.tweaks.registry import SECTION_FEATURES, SPECS_BY_SECTION
@@ -140,12 +141,13 @@ class HotLoad:
             if not isinstance(parsed, dict) or "rules" not in parsed:
                 return False
             parsed["_fetched_at"] = int(time.time())
-            path = _rules_path()
-            # Write-then-rename: a crash mid-write must never leave a
-            # truncated rules file (that silently disarms ALL safety rules).
-            with open(str(path) + ".part", "w", encoding="utf-8") as f:
+            path = Path(_rules_path())
+            # Atomic: a crash or full disk mid-write must not leave a truncated
+            # JSON that silently kills every safety rule on the next launch.
+            tmp_path = path.with_name(path.name + ".part")
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(parsed, f, ensure_ascii=False, indent=2)
-            os.replace(str(path) + ".part", path)
+            os.replace(tmp_path, path)
             self._rules = parsed
             return True
         except Exception as e:
