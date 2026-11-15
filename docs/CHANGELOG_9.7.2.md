@@ -46,4 +46,4 @@ Background work is bounded and faster (micro-benchmarks; full-apply times depend
 - Backup-encryption detection errors no longer abort the backup, and device-lock detection also covers passcode-required lockdown errors and code 208.
 - Fixed the outgoing header action button overlapping the new one during rapid page changes.
 
-**Full Changelog**: https://github.com/GoldenNugget-Team/GoldenNugget/compare/9.7.1...9.7.2
+**Full Changelog**: https://github.com/GoldensHQ/GoldenNugget/compare/9.7.1...9.7.2

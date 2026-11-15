@@ -30,7 +30,7 @@ CREDITS = [
     (QT_TRANSLATE_NOOP("SupportPanel", "AI Eligibility"), "mattisklein (Project Linwood)", "https://github.com/mattisklein"),
     (QT_TRANSLATE_NOOP("SupportPanel", "PosterBoard Icons"), "JJTech", "https://github.com/JJTech0130"),
     (QT_TRANSLATE_NOOP("SupportPanel", "AirLift"), "0xjohnnydev", "https://github.com/0xjohnnydev"),
-    (QT_TRANSLATE_NOOP("SupportPanel", "Translations"), QT_TRANSLATE_NOOP("SupportPanel", "GoldenNugget translation contributors"), "https://github.com/GoldenNugget-Team/gNugget-i18n"),
+    (QT_TRANSLATE_NOOP("SupportPanel", "Translations"), QT_TRANSLATE_NOOP("SupportPanel", "GoldenNugget translation contributors"), "https://github.com/GoldensHQ/gNugget-i18n"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Legacy Translations"), QT_TRANSLATE_NOOP("SupportPanel", "Nugget translation contributors"), "https://poeditor.com/join/project/UTqpVSE2UD"),
 ]
 

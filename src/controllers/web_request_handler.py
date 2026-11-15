@@ -7,7 +7,7 @@ from src.devicemanagement.constants import Version
 # inside get_latest_version() instead of at module import. This module sits on
 # the GUI startup import graph (dialogs -> icon pack downloader).
 
-Nugget_Repo = "GoldenNugget-Team/GoldenNugget/releases/latest"
+Nugget_Repo = "GoldensHQ/GoldenNugget/releases/latest"
 
 last_fetched_version: str = None
 last_fetched_release: dict = {}
@@ -89,9 +89,9 @@ def update_download_url():
                     or arm and any(word in name for word in ('x86_64', 'x64', 'amd64', 'intel'))):
                 continue
             if name.endswith(suffix) and (suffix in ('.dmg', '.exe', '.msi', '.appimage') or any(word in name for word in platform_words)):
-                if isinstance(url, str) and urlparse(url).scheme == 'https' and urlparse(url).hostname == 'github.com' and urlparse(url).path.startswith('/GoldenNugget-Team/GoldenNugget/releases/download/'):
+                if isinstance(url, str) and urlparse(url).scheme == 'https' and urlparse(url).hostname == 'github.com' and urlparse(url).path.startswith('/GoldensHQ/GoldenNugget/releases/download/'):
                     return url
     tag = last_fetched_release.get('tag_name')
     if isinstance(tag, str) and tag:
-        return 'https://github.com/GoldenNugget-Team/GoldenNugget/archive/refs/tags/' + quote(tag, safe='') + '.zip'
-    return 'https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest'
+        return 'https://github.com/GoldensHQ/GoldenNugget/archive/refs/tags/' + quote(tag, safe='') + '.zip'
+    return 'https://github.com/GoldensHQ/GoldenNugget/releases/latest'

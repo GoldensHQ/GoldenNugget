@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT / "src" / "qt"))
 MAX_FILE_BYTES = 64 * 1024
 PRESET_PATH = re.compile(r"^presets/[^/]+\.json$")
 TEMPLATE_PATH = re.compile(r"^templates/[^/]+\.batter$")
-BATTER_BUILDER_URL = "https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder/releases/latest"
+BATTER_BUILDER_URL = "https://github.com/GoldensHQ/GoldenNugget-TemplateBuilder/releases/latest"
 
 
 def load_entries(catalog: Path, changed=frozenset()):

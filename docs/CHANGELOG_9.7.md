@@ -34,4 +34,4 @@
 - Fix the iOS backup command-line tool and resource loading when launched outside the project folder.
 - Remove unused code and improve macOS dependency packaging.
 
-**Full Changelog**: https://github.com/GoldenNugget-Team/GoldenNugget/compare/9.6.2...9.7
+**Full Changelog**: https://github.com/GoldensHQ/GoldenNugget/compare/9.6.2...9.7

@@ -245,6 +245,22 @@ def main():
         check("the tweak payload replaced the unreadable baseline",
               first == {"AccessibilityKey": 1}, f"contents={first}")
 
+    # ---- Clear-file tweaks (NullifyFileTweak) skip the baseline entirely ----
+    # ScreenTimeAgent.plist on some devices is not a parseable plist (keyed/
+    # binary data), so merging the empty-plist payload onto it aborted the
+    # apply with "invalid or unreadable preference data (ValueError, 593
+    # bytes)". The tweak replaces the whole file; the baseline is irrelevant.
+    with tempfile.TemporaryDirectory() as tmp:
+        dev = make_core_backup(Path(tmp), "UDID")
+        path = "Library/Preferences/com.apple.ScreenTimeAgent.plist"
+        make_row(dev, "HomeDomain", path, b"\x00not-a-plist-garbage")
+        injected, unchanged, failed, created = inject(Path(tmp), "UDID", [
+            ("HomeDomain", path, plistlib.dumps({}), mode, 501, 501)])
+        check("clear-file tweak on an unreadable baseline does not abort",
+              (failed, injected) == (0, 1), f"{injected}/{unchanged}/{failed}")
+        check("the empty plist replaced the unreadable baseline",
+              plistlib.loads(read_payload(dev, "HomeDomain", path)) == {})
+
     # ---- A managed row whose payload file is missing degrades the same way --
     with tempfile.TemporaryDirectory() as tmp:
         dev = make_core_backup(Path(tmp), "UDID")

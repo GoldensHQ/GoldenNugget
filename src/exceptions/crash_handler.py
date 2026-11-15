@@ -65,7 +65,7 @@ from src.exceptions.nugget_exception import BackupDiskSpaceError
 
 logger = logging.getLogger("GoldenNugget.crash")
 
-ISSUES_URL = "https://github.com/GoldenNugget-Team/GoldenNugget/issues/new"
+ISSUES_URL = "https://github.com/GoldensHQ/GoldenNugget/issues/new"
 
 
 def _app_name() -> str:

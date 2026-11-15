@@ -152,7 +152,7 @@ class UIRefinementTests(unittest.TestCase):
             self.assertEqual(open_url.call_args.args[0].toString(), "https://discord.gg/F7ssrHjdgK")
             panel.github.click()
             self.assertEqual(open_url.call_args.args[0].toString(),
-                             "https://github.com/GoldenNugget-Team/GoldenNugget")
+                             "https://github.com/GoldensHQ/GoldenNugget")
         panel.deleteLater()
 
     def test_home_support_panel_reuses_existing_link_cards(self):

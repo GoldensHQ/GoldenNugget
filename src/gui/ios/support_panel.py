@@ -307,7 +307,7 @@ class CommunityLinks(QWidget):
         self._links = []
         for title, icon, url in (
             ('Golden Nugget Support', ':/icon/discord.svg', 'https://discord.gg/F7ssrHjdgK'),
-            ('Source Code', ':/icon/github.svg', 'https://github.com/GoldenNugget-Team/GoldenNugget'),
+            ('Source Code', ':/icon/github.svg', 'https://github.com/GoldensHQ/GoldenNugget'),
         ):
             button = QPushButton(self)
             button.setObjectName('communityLink')

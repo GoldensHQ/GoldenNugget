@@ -1,6 +1,6 @@
 """GoldenNugget Mobile helper — sideload the mobile app and deliver its pairing file.
 
-GoldenNugget Mobile (github.com/GoldenNugget-Team/GoldenNugget-mobile) is the
+GoldenNugget Mobile (github.com/GoldensHQ/GoldenNugget-mobile) is the
 on-device port of this app. It is a sideloaded IPA whose minimuxer core needs a
 pairing record to talk to the phone it runs on. The device is already paired
 with this desktop app over usbmuxd, so GoldenNugget is the right host to
@@ -76,7 +76,7 @@ PAIRING_RECORD_KEYS = (
 REMOTE_PAIRING_KEYS = ("identifier", "private_key", "public_key")
 REMOTE_PAIRING_TIMEOUT = 180.0
 LATEST_RELEASE_API = (
-    "https://api.github.com/repos/GoldenNugget-Team/GoldenNugget-mobile/releases/latest"
+    "https://api.github.com/repos/GoldensHQ/GoldenNugget-mobile/releases/latest"
 )
 ENGINE_NAME = "gn-sideload"
 ENGINE_BUILD_HINT = (

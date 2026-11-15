@@ -50,7 +50,7 @@ jobs:
   build-macos-qt:
     if: ${{ github.event_name == 'push' || inputs.build_for_macos }}
     name: Shared Qt 6.12 / Python 3.15 (Universal2)
-    uses: GoldenNugget-Team/QTBuildMacOS/.github/workflows/download.yml@0d9e4ff6893e66c5b98a85ded2186a79c83e7199
+    uses: GoldensHQ/QTBuildMacOS/.github/workflows/download.yml@0d9e4ff6893e66c5b98a85ded2186a79c83e7199
     with:
       release: qt-6.12.0-python-3.15-macos-14.4-v1
 

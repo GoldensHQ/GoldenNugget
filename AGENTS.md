@@ -254,7 +254,7 @@ navigating to Settings. The module is deliberately split in two:
 ## GoldenNugget Mobile Helper (src/devicemanagement/mobile_helper.py + src/gui/dialogs/mobile_helper_dialog.py)
 
 Settings → Device → **"GoldenNugget Mobile Helper"** sideloads the on-device
-port (`GoldenNugget-Team/GoldenNugget-mobile`, bundle id
+port (`GoldensHQ/GoldenNugget-mobile`, bundle id
 `com.awesomenull.goldennugget`) onto the connected iPhone and delivers its
 **RemotePairing** pairing record — the transport the app needs on iOS 26.4+.
 The pairing section is a single button, **"Send Remote Pairing"**.

@@ -172,7 +172,7 @@ class AboutProgramDialog(QDialog):
         github_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         github_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._style(github_btn, "about_footer_link")
-        github_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/GoldenNugget-Team/GoldenNugget")))
+        github_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/GoldensHQ/GoldenNugget")))
         links_layout.addWidget(github_btn)
         
         website_btn = QToolButton()

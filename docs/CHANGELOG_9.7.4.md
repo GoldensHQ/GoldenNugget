@@ -43,7 +43,7 @@ Mobile** row on the home screen right under the feature tiles):
   critical zip-cloaking arbitrary-file-overwrite (GHSA-m665-v7pm-7grj /
   CVE-2026-115905) plus four advisories are fixed in `zip` 9.x, so the engine
   builds isideload from the one-line patch branch
-  `GoldenNugget-Team/isideload@zip-9.1-security` until upstream releases it
+  `GoldensHQ/isideload@zip-9.1-security` until upstream releases it
   (PR nab138/isideload#31 tracks the same change upstream).
 - The build script pins the rustup toolchain's bin ahead of PATH, so a
   MacPorts/Homebrew `rustc` earlier in PATH cannot shadow the rustup std for
@@ -67,4 +67,4 @@ Mobile** row on the home screen right under the feature tiles):
 - The packaged app ships as **GoldenNugget** instead of Nugget, and the
   experimental fast backup cache landed.
 
-**Full Changelog**: https://github.com/GoldenNugget-Team/GoldenNugget/compare/9.7.2...9.7.4
+**Full Changelog**: https://github.com/GoldensHQ/GoldenNugget/compare/9.7.2...9.7.4

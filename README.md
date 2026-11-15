@@ -3,7 +3,7 @@
 # GoldenNugget
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
-[Download](https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest) · [Wiki](https://github.com/GoldenNugget-Team/GoldenNugget/wiki) · [Report a bug](https://github.com/GoldenNugget-Team/GoldenNugget/issues/new/choose) · [Discussions](https://github.com/GoldenNugget-Team/GoldenNugget/discussions)
+[Download](https://github.com/GoldensHQ/GoldenNugget/releases/latest) · [Wiki](https://github.com/GoldensHQ/GoldenNugget/wiki) · [Report a bug](https://github.com/GoldensHQ/GoldenNugget/issues/new/choose) · [Discussions](https://github.com/GoldensHQ/GoldenNugget/discussions)
 
 > [!WARNING]
 > **Back up your device before applying tweaks.** GoldenNugget can cause data loss, boot loops, or other unexpected device problems. Use this project at your own risk; the authors are not responsible for damage to your device or data. See the [full disclaimer](docs/DISCLAIMER.md).
@@ -17,8 +17,8 @@ Make sure you have installed the [requirements](#requirements) if you are on Win
 ## Quick Start
 
 For a packaged app, download the archive for your platform from the
-[latest release](https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest).
-See the [installation guide](https://github.com/GoldenNugget-Team/GoldenNugget/wiki/Installation-and-first-launch) for setup help.
+[latest release](https://github.com/GoldensHQ/GoldenNugget/releases/latest).
+See the [installation guide](https://github.com/GoldensHQ/GoldenNugget/wiki/Installation-and-first-launch) for setup help.
 
 ## Running from source
 Requirements
@@ -68,7 +68,7 @@ On iOS 27, GoldenNugget restores your data from the protective backup it makes r
 <details>
 <summary>How do I install the macOS app?</summary>
 
-Download `GoldenNugget-macOS-Universal2.dmg` from the [latest release](https://github.com/GoldenNugget-Team/GoldenNugget/releases/latest), open it and copy GoldenNugget to Applications. It needs macOS 14.4 or newer. The app isn't notarized, so on first launch go to **System Settings → Privacy & Security** and choose **Open Anyway**.
+Download `GoldenNugget-macOS-Universal2.dmg` from the [latest release](https://github.com/GoldensHQ/GoldenNugget/releases/latest), open it and copy GoldenNugget to Applications. It needs macOS 14.4 or newer. The app isn't notarized, so on first launch go to **System Settings → Privacy & Security** and choose **Open Anyway**.
 </details>
 
 <details>
@@ -84,11 +84,11 @@ Need support? Join our [Discord Server][server].
 [GoldenNugget Mobile][mobile] runs on your device without a computer.
 
 ## Make your own templates
-[Batter Builder](https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder/releases/latest)
+[Batter Builder](https://github.com/GoldensHQ/GoldenNugget-TemplateBuilder/releases/latest)
 is a visual editor for `.batter` templates with community tweaks: switches,
 sliders, text boxes and choice lists, no JSON by hand. It checks the template
 with GoldenNugget's rules, previews it on a virtual iPhone and submits it to the
-[community catalog](https://github.com/GoldenNugget-Team/GoldenNugget-Presets).
+[community catalog](https://github.com/GoldensHQ/GoldenNugget-Presets).
 
 ## Features
 <details>
@@ -100,7 +100,7 @@ with GoldenNugget's rules, previews it on a virtual iPhone and submits it to the
   - Device-Specific wallpapers in MercuryPoster can be installed
   - See documentation on the structure of tendies and batter files in [documentation.md](documentation.md)
 - Templates: Custom Operations and file editing
-  - Make your own with [Batter Builder](https://github.com/GoldenNugget-Team/GoldenNugget-TemplateBuilder/releases/latest), a visual editor for templates with community tweaks
+  - Make your own with [Batter Builder](https://github.com/GoldensHQ/GoldenNugget-TemplateBuilder/releases/latest), a visual editor for templates with community tweaks
   - See documentation on the structure of batter files in [documentation.md](documentation.md)
 - Status Bar
   - Live preview of the Lock Screen and Home Screen status bar before applying
@@ -209,21 +209,21 @@ with GoldenNugget's rules, previews it on a virtual iPhone and submits it to the
 
 **Thanks to everyone who contributes to the project!** 🎉
 
-<a href="https://github.com/GoldenNugget-Team/GoldenNugget/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=GoldenNugget-Team/GoldenNugget" alt="Contributors" />
+<a href="https://github.com/GoldensHQ/GoldenNugget/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=GoldensHQ/GoldenNugget" alt="Contributors" />
 </a>
 
-Want to see your name here? Open a [Pull Request](https://github.com/GoldenNugget-Team/GoldenNugget/pulls)!
+Want to see your name here? Open a [Pull Request](https://github.com/GoldensHQ/GoldenNugget/pulls)!
 
 </div>
 
 ## Star History
 
-<a href="https://www.star-history.com/?type=date&repos=GoldenNugget-Team%2FGoldenNugget">
+<a href="https://www.star-history.com/?type=date&repos=GoldensHQ%2FGoldenNugget">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=GoldenNugget-Team/GoldenNugget&type=date&theme=dark&legend=top-left&sealed_token=3Suw7Y0hFqwuBPijtmeM2A7pzK2ZCvEPoousYMJzOVFnPza-Aq5SzgNnEcgveIpQsBLEOL2QRtxwZbmaxn_S_3Lf9l0jINrMfRWkjFWGo3dVYCrFRpN6dA" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=GoldenNugget-Team/GoldenNugget&type=date&legend=top-left&sealed_token=3Suw7Y0hFqwuBPijtmeM2A7pzK2ZCvEPoousYMJzOVFnPza-Aq5SzgNnEcgveIpQsBLEOL2QRtxwZbmaxn_S_3Lf9l0jINrMfRWkjFWGo3dVYCrFRpN6dA" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=GoldenNugget-Team/GoldenNugget&type=date&legend=top-left&sealed_token=3Suw7Y0hFqwuBPijtmeM2A7pzK2ZCvEPoousYMJzOVFnPza-Aq5SzgNnEcgveIpQsBLEOL2QRtxwZbmaxn_S_3Lf9l0jINrMfRWkjFWGo3dVYCrFRpN6dA" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=GoldensHQ/GoldenNugget&type=date&theme=dark&legend=top-left&sealed_token=3Suw7Y0hFqwuBPijtmeM2A7pzK2ZCvEPoousYMJzOVFnPza-Aq5SzgNnEcgveIpQsBLEOL2QRtxwZbmaxn_S_3Lf9l0jINrMfRWkjFWGo3dVYCrFRpN6dA" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=GoldensHQ/GoldenNugget&type=date&legend=top-left&sealed_token=3Suw7Y0hFqwuBPijtmeM2A7pzK2ZCvEPoousYMJzOVFnPza-Aq5SzgNnEcgveIpQsBLEOL2QRtxwZbmaxn_S_3Lf9l0jINrMfRWkjFWGo3dVYCrFRpN6dA" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=GoldensHQ/GoldenNugget&type=date&legend=top-left&sealed_token=3Suw7Y0hFqwuBPijtmeM2A7pzK2ZCvEPoousYMJzOVFnPza-Aq5SzgNnEcgveIpQsBLEOL2QRtxwZbmaxn_S_3Lf9l0jINrMfRWkjFWGo3dVYCrFRpN6dA" />
  </picture>
 </a>
 
@@ -265,7 +265,7 @@ If you find this project useful, consider starring the repo.
 
 ## Documentation
 
-- [Wiki](https://github.com/GoldenNugget-Team/GoldenNugget/wiki): installation, tweaks, presets, wallpapers and troubleshooting.
+- [Wiki](https://github.com/GoldensHQ/GoldenNugget/wiki): installation, tweaks, presets, wallpapers and troubleshooting.
 - [Portable presets and diagnostics](docs/PORTABLE_AND_DIAGNOSTICS.md): `.gnpreset` files, diagnostic archives, JSON CLI output and offline wallpaper checks.
 - [Architecture](docs/ARCHITECTURE.md): device connections, background operations and backup/restore internals.
 - [Contributing](CONTRIBUTING.md): contribution guidelines and offline checks.
@@ -295,11 +295,11 @@ python compile.py
 Build output is written to `dist/`.
 
 The macOS CI build downloads Qt/PySide6 6.12.0 Universal2 wheels for Python
-3.15 from [QTBuildMacOS](https://github.com/GoldenNugget-Team/QTBuildMacOS).
+3.15 from [QTBuildMacOS](https://github.com/GoldensHQ/QTBuildMacOS).
 Qt compilation, wheel normalization, and shared releases are maintained there;
 this repository builds the application using the published wheels. The current
 runtime requires macOS 14.4 or newer. See the shared repository for local Qt
-build instructions and reuse in other GoldenNugget-Team projects.
+build instructions and reuse in other GoldensHQ projects.
 
 ## Contributing and forking
 
@@ -336,7 +336,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contributions and [FORKING.md](FORKIN
 [sbr]: https://github.com/Prognosticate-X/ios27-carrier-lockscreen-research
 [caplayground]: https://caplayground.vercel.app/wallpapers
 [i18n]: https://github.com/awesomenull-dev/gNugget-i18n
-[NuggetLogo]: https://github.com/GoldenNugget-Team/GoldenNugget/blob/main/src/qt/credits/small_nugget.png
+[NuggetLogo]: https://github.com/GoldensHQ/GoldenNugget/blob/main/src/qt/credits/small_nugget.png
 [LeminLimez]: https://github.com/leminlimez
 [CowabungaLite]: https://github.com/leminlimez/CowabungaLite
 [WallpapersWebsite]: https://cowabun.ga/wallpapers
@@ -384,4 +384,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contributions and [FORKING.md](FORKIN
 [awesomenull]: https://github.com/awesomenull-dev
 [kik4311]: https://github.com/kik4311
 [AirLift]: https://github.com/0xjohnnydev/airlift
-[mobile]: https://github.com/GoldenNugget-Team/GoldenNugget-mobile
+[mobile]: https://github.com/GoldensHQ/GoldenNugget-mobile

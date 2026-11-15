@@ -22,7 +22,7 @@ from src.gui.logger import get_logger
 from src.tweaks.registry import SECTION_FEATURES, SPECS_BY_SECTION
 from src.version import App_Version as _APP_VERSION
 
-RULES_URL = ("https://raw.githubusercontent.com/GoldenNugget-Team/"
+RULES_URL = ("https://raw.githubusercontent.com/GoldensHQ/"
              "GoldenNugget/main/hotload_rules.json")
 RULES_FILENAME = "hotload_rules.json"
 KILL_SWITCH_KEY = "hotload_enabled"

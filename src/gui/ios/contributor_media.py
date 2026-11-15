@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication
 from shiboken6 import isValid
 
 GITHUB_NAME = re.compile(r'[A-Za-z0-9_-]+\Z')
-TRANSLATIONS_REPOSITORY = 'GoldenNugget-Team/gNugget-i18n'
+TRANSLATIONS_REPOSITORY = 'GoldensHQ/gNugget-i18n'
 _CACHE_SECONDS = 24 * 60 * 60
 _MAX_BYTES = 2 * 1024 * 1024
 

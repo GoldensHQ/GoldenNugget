@@ -162,7 +162,7 @@ more than 20 messages; if you regenerate by hand, check the count first.
 That folder is a **mirror**. The sync deletes it and copies the i18n repo's
 `.ts` over it wholesale — no per-string merging. Any translation added there
 is gone at the next sync. Make every change in
-[GoldenNugget-Team/gNugget-i18n](https://github.com/GoldenNugget-Team/gNugget-i18n).
+[GoldensHQ/gNugget-i18n](https://github.com/GoldensHQ/gNugget-i18n).
 
 ## CI/CD Pipeline
 
