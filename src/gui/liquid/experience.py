@@ -1,8 +1,8 @@
 import math
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QIcon, QPainter, QPen
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QAbstractButton,
     QApplication,
@@ -12,14 +12,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from awesomeui.liquid.controls import (
+from .controls import (
     GlassPanel,
     LiquidButton,
     LiquidDangerButton,
     PulseOverlay,
+    paint_dock_glass,
 )
-from awesomeui.liquid.motion import animate
-from awesomeui.liquid.reveal import DevicePeek, PageReveal
+from .motion import animate
+from .reveal import DevicePeek, PageReveal
 from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager
 
@@ -71,6 +72,15 @@ class UpdateBorder(GlassPanel):
             p.drawRoundedRect(QRectF(self.rect()).adjusted(7,7,-7,-7),20,20)
 
 
+class DeviceDockFrame(GlassPanel):
+    def paintEvent(self,event):
+        painter=QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        shape=QPainterPath()
+        shape.addRoundedRect(QRectF(self.rect()).adjusted(.5,.5,-.5,-.5),24,24)
+        paint_dock_glass(painter,shape,subtle=True)
+
+
 class LiquidExperience(QObject):
     def __init__(self,window):
         super().__init__(window)
@@ -84,17 +94,22 @@ class LiquidExperience(QObject):
         self.update_shown=False
         self.device=DeviceDrawer(window)
         self.restore=RestoreDrawer(window)
-        from .dock_gear import DockGear
-        self.dock_gear=DockGear(window)
         self.border=UpdateBorder(window)
+        self.device_frame=DeviceDockFrame(window)
+        self.device_frame.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.device_button=LiquidButton('Device',window)
         self.device_button.setIcon(QIcon(str(Path(__file__).parent/'assets/usb.svg')))
+        self.device_button.setIconSize(QSize(19,19))
+        device_font=self.device_button.font()
+        device_font.setPixelSize(13)
+        self.device_button.setFont(device_font)
         self.device_button.clicked.connect(self.device.toggle)
         self.peek=DevicePeek(window)
         self.home._device_preview.preview_changed.connect(self.peek.refresh_preview)
         self.device_button.installEventFilter(self)
-        self.device_button.setToolTip('Device information and connection')
-        self.device_button.setProperty('solidSurface',True)
+        self.device_button.setToolTip('')
+        self.device_button.setProperty('dockItem',True)
+        self.device_button.setProperty('menuItem',False)
         self._clean_home()
         self._style()
         self.reserve_dock_space()
@@ -123,10 +138,14 @@ class LiquidExperience(QObject):
         home.catalog_card.setMinimumHeight(58)
         home.cards_grid.show()
         home.catalog_card.show()
+        home.mobile_row.show()
         layout.removeWidget(home.cards_grid)
         layout.insertWidget(0,home.cards_grid)
-        layout.removeWidget(home.catalog_card)
-        layout.insertWidget(0,home.catalog_card)
+        for index in range(layout.count()):
+            if layout.itemAt(index).layout() is home.links_row:
+                layout.takeAt(index)
+                break
+        layout.insertLayout(0,home.links_row)
         home.apply_btn.setText('Apply Changes')
         home.apply_btn.setProperty('homeAction',True)
         home.apply_btn.setProperty('silentHoverAudio',True)
@@ -201,11 +220,22 @@ class LiquidExperience(QObject):
             right=True
         elif edge=='right':
             right=False
-        y=self.window.height()-(126 if edge=='bottom'and not right else 74)
-        width=min(max(138,self.device_button.fontMetrics().horizontalAdvance(self.device_button.text())+62),max(138,self.window.width()-48))
-        rect=QRect(self.window.width()-width-24 if right else 24,y,width,46)
+        dock=self.window.bottom_navigation
+        height=42
+        y=dock.y()+(dock.height()-height)//2 if edge in ('top','bottom') else 16
+        width=min(max(132,self.device_button.fontMetrics().horizontalAdvance(self.device_button.text())+38),max(132,self.window.width()-48))
+        frame=QRect(self.window.width()-width-16 if right else 12,y,width+4,height)
+        rect=frame.adjusted(2,2,-2,-2)
+        if frame.intersects(dock.geometry()):
+            right=not right
+            frame.moveLeft(self.window.width()-width-16 if right else 12)
+            rect=frame.adjusted(2,2,-2,-2)
+        if self.device_frame.geometry()!=frame:
+            self.device_frame.setGeometry(frame)
         if self.device_button.geometry()!=rect:
             self.device_button.setGeometry(rect)
+        self.device_frame.raise_()
+        self.device_button.raise_()
 
     def reserve_dock_space(self):
         dock=self.window.bottom_navigation
@@ -278,6 +308,8 @@ class LiquidExperience(QObject):
 
     def page_transition(self,*args):
         self.window._stop_page_slide()
+        if self.window.ios_pages.currentIndex()!=0 and self.restore.isVisible() and not self.restore._progress_mode:
+            self.restore.hide()
         if not hasattr(self,'_page_reveal'):
             self._page_reveal=PageReveal(self.window.ios_pages)
         if self.window.ios_pages.currentIndex()==0:
@@ -352,7 +384,6 @@ class LiquidExperience(QObject):
         if self.last_device and not uid and not self.window.bottom_navigation.operation_active():
             notify('Device disconnected','Reconnect your device to apply changes.')
         self.last_device=uid
-        self.dock_gear.position()
         self.home.status_lbl.hide()
         self.home.device_connection.hide()
         if self.home._update_available is True and not self.update_shown:

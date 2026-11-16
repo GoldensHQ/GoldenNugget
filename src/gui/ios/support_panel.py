@@ -86,7 +86,7 @@ class SupportPanel(LiquidCard):
             ":/credits/awesomenull.png",
             ":/credits/windows11aero.png",
             ":/credits/kik4311.png",
-            ":/credits/LeminLimez.png",
+            CREDIT_AVATARS["https://discord.com/users/1155026301791514655"],
         )
         for (role, name, url), portrait in zip(CREDITS[:len(portraits)], portraits):
             team.addWidget(self._profile(role, name, url, portrait), 1)

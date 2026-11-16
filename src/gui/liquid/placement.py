@@ -54,11 +54,18 @@ def reveal_panel(panel,window,anchor,size,edge):
 
 
 def sheet_rect(window,anchor,size):
+    from src.gui.window_chrome import DRAG_STRIP_HEIGHT
+
     origin=QRect(anchor.mapTo(window,QPoint(0,0)),anchor.size())
     width=min(size.width(),window.width()-24)
-    height=min(size.height(),max(120,origin.top()-12))
+    top=DRAG_STRIP_HEIGHT+6
+    above=max(0,origin.top()-8-top)
+    below=max(0,window.height()-origin.bottom()-20)
+    place_below=above<size.height() and below>above
+    height=min(size.height(),below if place_below else above)
     x=max(12,min(origin.center().x()-width//2,window.width()-width-12))
-    return QRect(x,origin.top()-height+3,width,height)
+    y=origin.bottom()+8 if place_below else origin.top()-height-8
+    return QRect(x,max(top,y),width,height)
 
 
 def reveal_sheet(panel,window,anchor,size,*,duration=540,extend_from_button=False):

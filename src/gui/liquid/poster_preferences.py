@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel
 
 from awesomeui.liquid.cards import prepare_card
 from awesomeui.liquid.choice_editor import ChoiceDialog
-from awesomeui.liquid.controls import LiquidButton
+from .controls import LiquidButton
 from awesomeui.liquid.selection_card import bind_selection_card
 from awesomeui.liquid.value_editor import ValueEditor
 from awesomeui.liquid.value_entry import GlassValueEntry

@@ -312,7 +312,7 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
 
         # Shared reusable header: one instance for every iOS subpage,
         # reconfigured on page change (title / back / right action).
-        from awesomeui.liquid.navigation import LiquidNavBar
+        from src.gui.liquid.navigation import LiquidNavBar
 
         self.ios_nav = LiquidNavBar("", on_back=self._go_back)
         self._ios_page_titles = {
@@ -466,11 +466,32 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # pages are built) so the tree is polished once, not twice.
         from src.gui.liquid.experience import LiquidExperience
         self.liquid = LiquidExperience(self)
-        # Tweaks/Daemons are NOT pre-built: both rebuild themselves from
-        # showEvent(), so opening either page costs its build once — exactly
-        # what the user asked for ("build a page only when they enter it").
-        # A timer prewarm was tried and dropped: it landed back-to-back with
-        # the startup device scans/imports and multiplied the visible hitches.
+        self._control_prewarm = QtCore.QTimer(self)
+        self._control_prewarm.setSingleShot(True)
+        self._control_prewarm.timeout.connect(self._prewarm_control_pages)
+        self._control_prewarm.start(1200)
+
+    def _prewarm_control_pages(self):
+        if not self.isVisible() or QtWidgets.QApplication.activeModalWidget() is not None:
+            self._control_prewarm.start(1000)
+            return
+        self._prewarm_control_page("ios_tweaks")
+        self._daemon_prewarm = QtCore.QTimer(self)
+        self._daemon_prewarm.setSingleShot(True)
+        self._daemon_prewarm.timeout.connect(lambda: self._prewarm_control_page("ios_daemons"))
+        self._daemon_prewarm.start(800)
+
+    def _prewarm_control_page(self, name):
+        if name not in self._lazy_pages or name in self._pending_page_builds:
+            return
+        if QtWidgets.QApplication.activeModalWidget() is not None:
+            self._daemon_prewarm.start(1000) if name == "ios_daemons" else self._control_prewarm.start(1000)
+            return
+        try:
+            page = self._build_lazy_page(name)
+            page.prepare_content(finish=False)
+        except Exception:
+            logging.getLogger("GoldenNugget.gui").exception("%s prewarm failed", name)
 
     def _reserve_page(self, name: str, factory):
         """Reserve a stack slot for a page that is built on first access.

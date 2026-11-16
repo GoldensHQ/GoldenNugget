@@ -108,8 +108,8 @@ _CLOSE_HOVER_COLOR = "#e81123"
 #: Traffic-light buttons (mac style): diameter, gap and where the group starts.
 BUTTON_SIZE = 14
 BUTTON_GAP = 8
-CONTROLS_LEFT = 16
-CONTROLS_TOP = 10
+CONTROLS_LEFT = 12
+CONTROLS_TOP = 12
 
 #: Left space a top surface has to reserve for the buttons (left + width + air).
 CONTROLS_INSET = 76
