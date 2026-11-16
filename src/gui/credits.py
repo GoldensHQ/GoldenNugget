@@ -7,8 +7,8 @@ CREDITS = [
     (QT_TRANSLATE_NOOP("SupportPanel", "Owner / Main Developer"), "awesomenull", "https://github.com/awesomenull-dev"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Co-Developer"), "Windows11Aero", "https://github.com/Wind0ws11Aero"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Co-Developer"), "kik4311", "https://github.com/kik4311"),
+    (QT_TRANSLATE_NOOP("SupportPanel", "Co-Developer"), "omaw", "https://discord.com/users/1155026301791514655"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Nugget Creator"), "leminlimez", "https://github.com/leminlimez"),
-    (QT_TRANSLATE_NOOP("SupportPanel", "UI Designer"), "@omaw", "https://discord.com/users/1155026301791514655"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Icon Artwork"), "mekabrine", "https://discord.com/users/1196529222617923660"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Interface Icons"), "Lucide contributors", "https://github.com/lucide-icons"),
     (QT_TRANSLATE_NOOP("SupportPanel", "Inter Font"), "Rasmus Andersson", "https://github.com/rsms"),
@@ -35,6 +35,8 @@ CREDITS = [
 ]
 
 CREDIT_AVATARS = {
+    "https://discord.com/users/1155026301791514655":
+        str(Path(__file__).resolve().parents[1] / "qt" / "credits" / "omaw.webp"),
     "https://github.com/qt":
         str(Path(__file__).resolve().parents[1] / "qt" / "credits" / "pyside6.png"),
     "https://x.com/disfordottie":

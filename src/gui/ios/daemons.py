@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.controllers.favorites import TweakFavorites
+from src.gui.ios.control_guide import ControlGuideCard
 from src.gui.ios.components import (
     IOSSearchEmpty,
     IOSSearchField,
@@ -214,6 +215,11 @@ class IOSDaemonsContent(QWidget):
         layout.addLayout(search_row)
         self.filter_control.currentIndexChanged.connect(self._apply_search)
         self._favorites.changed.connect(self._refresh_favorites)
+        self.guide_card = ControlGuideCard(
+            self.tr("Daemons Information"),
+            self.tr("Each card names a background service. Turn it on to disable that service when you Apply Changes."),
+            self)
+        layout.addWidget(self.guide_card)
 
         # Master enable switch
         layout.addWidget(IOSSectionHeader(
@@ -545,7 +551,13 @@ class IOSDaemonsContent(QWidget):
     def _apply_search(self, *_args):
         if getattr(self, "_building", False):
             return
+        self._refresh_guide_counts()
         self._filter_rows()
+
+    def _refresh_guide_counts(self):
+        switches = [switch for daemon, switch in self.daemon_switches
+                    if not any(key in self.daemons_tweak.never_enable for key in daemon.value)]
+        self.guide_card.set_counts(sum(switch.isChecked() for switch in switches), len(switches))
 
     def _filter_rows(self):
         searching = bool(self.search.text().strip())
@@ -585,6 +597,8 @@ class IOSDaemonsContent(QWidget):
         title = control_title(title)
         information = information or self.tr(DAEMON_DESCRIPTIONS.get(daemon.name, ""))
         card = LiquidCard()
+        if daemon is Daemon.AssistiveTouch:
+            card.setMaximumHeight(96)
         card.setProperty("searchText", " ".join([title, information, daemon.name, *daemon.value]))
         card.setProperty("sortTitle", title.removeprefix(self.tr("Disable ")).casefold())
         row_layout = QHBoxLayout(card)

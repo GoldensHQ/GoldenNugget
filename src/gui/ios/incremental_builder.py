@@ -7,6 +7,7 @@ class IncrementalBuilder(QObject):
     def __init__(self, parent, on_error=None):
         super().__init__(parent)
         self._steps = None
+        self._first_batch = True
         self._on_error = on_error
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
@@ -15,6 +16,7 @@ class IncrementalBuilder(QObject):
     def start(self, steps):
         self.cancel()
         self._steps = iter(steps)
+        self._first_batch = True
         self._timer.start(0)
 
     def cancel(self):
@@ -40,7 +42,8 @@ class IncrementalBuilder(QObject):
             raise
 
     def _advance(self):
-        deadline = perf_counter() + 0.004
+        deadline = perf_counter() + (0.010 if self._first_batch else 0.002)
+        self._first_batch = False
         try:
             while self._steps is not None and perf_counter() < deadline:
                 next(self._steps)
@@ -50,4 +53,4 @@ class IncrementalBuilder(QObject):
             self._on_step_error()
             raise
         if self._steps is not None:
-            self._timer.start(1)
+            self._timer.start(4)

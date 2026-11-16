@@ -464,13 +464,19 @@ class IOSHomePage(QWidget):
          self.statusbar_card, _, self.passcode_theme_card) = cards_row
         self.cards_grid = _CardGrid(cards_row)
         layout.addWidget(self.cards_grid)
-        # GoldenNugget Mobile opens a dialog, not a page — it gets the compact
-        # one-line row the Catalog uses, so the tile grid stays 6-wide.
+        # Keep the two compact links together above the feature tiles.
         self.mobile_row = self._make_mobile_row()
-        layout.addWidget(self.mobile_row)
-        # Keep the catalog as a compact row below the feature tiles.
         self.catalog_card = self._make_catalog_row()
-        layout.addWidget(self.catalog_card)
+        links = QHBoxLayout()
+        links.setContentsMargins(0, 0, 0, 0)
+        links.setSpacing(12)
+        links.addWidget(self.catalog_card, 1)
+        links.addWidget(self.mobile_row, 1)
+        for card in (self.catalog_card, self.mobile_row):
+            card.setMinimumWidth(0)
+            card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.links_row = links
+        layout.insertLayout(layout.indexOf(self.cards_grid), links)
 
         # Apply / Reset share one row on the home screen.
         actions = QHBoxLayout()
@@ -1167,19 +1173,26 @@ class IOSHomePage(QWidget):
         row = QHBoxLayout(card)
         row.setContentsMargins(16, 10, 16, 10)
         row.setSpacing(12)
+        self._mobile_chevron = QLabel("‹", card)
+        self._mobile_chevron.setFixedWidth(18)
+        row.addWidget(self._mobile_chevron)
         self._mobile_icon = QLabel(card)
         self._mobile_icon.setFixedSize(38, 38)
         self._mobile_icon.setStyleSheet("background-color: transparent;")
         row.addWidget(self._mobile_icon)
         self._mobile_title = QLabel(
             QCoreApplication.translate("Nugget", "GoldenNugget Mobile"), card)
-        row.addWidget(self._mobile_title)
+        self._mobile_title.setWordWrap(True)
+        self._mobile_title.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        text = QVBoxLayout()
+        text.setSpacing(2)
+        text.addWidget(self._mobile_title)
         self._mobile_caption = QLabel(QCoreApplication.translate(
             "Nugget", "Companion app for your iPhone"), card)
-        row.addWidget(self._mobile_caption, 1)
-        self._mobile_chevron = QLabel("›", card)
-        row.addWidget(self._mobile_chevron)
-
+        self._mobile_caption.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self._mobile_caption.setWordWrap(True)
+        text.addWidget(self._mobile_caption)
+        row.addLayout(text, 1)
         def open_helper(_event):
             from src.gui.dialogs.mobile_helper_dialog import MobileHelperDialog
             # self.window is the owning MainWindow instance (stored in
@@ -1204,11 +1217,19 @@ class IOSHomePage(QWidget):
         self._catalog_icon.setStyleSheet("background-color: transparent;")
         row.addWidget(self._catalog_icon)
         self._catalog_title = QLabel(QCoreApplication.translate("Nugget", "Community Catalog"), card)
-        row.addWidget(self._catalog_title)
+        self._catalog_title.setWordWrap(True)
+        self._catalog_title.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        text = QVBoxLayout()
+        text.setSpacing(2)
+        text.addWidget(self._catalog_title)
         self._catalog_caption = QLabel(
             QCoreApplication.translate("Nugget", "Presets & templates from the community"), card)
-        row.addWidget(self._catalog_caption, 1)
+        self._catalog_caption.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self._catalog_caption.setWordWrap(True)
+        text.addWidget(self._catalog_caption)
+        row.addLayout(text, 1)
         self._catalog_chevron = QLabel("›", card)
+        self._catalog_chevron.setFixedWidth(18)
         row.addWidget(self._catalog_chevron)
         card.mousePressEvent = lambda e: self.switch_to_ios_page(13)
         card.setCursor(Qt.PointingHandCursor)

@@ -225,6 +225,30 @@ class LiquidButton(QPushButton):
                                   max(0,min(1,position.y()/max(1,self.height()))))
         self.update()
 
+    def _drag_image(self):
+        if not self.property('menuItem'):
+            return self.grab()
+        dock=getattr(self.window(), 'bottom_navigation', None)
+        target=getattr(dock, 'buttons', {}).get(self.key) if dock is not None else None
+        if target is None:
+            return self.grab()
+        vertical=dock.edge in ('left','right')
+        size=QSize(50,40) if vertical else QSize(max(86,target.sizeHint().width()+4),42)
+        preview=LiquidButton(self.text(),key=self.key)
+        preview.setIcon(target.icon())
+        preview.setIconSize(target.iconSize())
+        preview.setFont(target.font())
+        preview.setStyleSheet(target.styleSheet())
+        preview.setProperty('dockItem',True)
+        preview.setProperty('menuItem',False)
+        preview.setProperty('iconOnly',vertical)
+        preview.resize(size)
+        image=QPixmap(size)
+        image.fill(Qt.transparent)
+        preview.render(image)
+        preview.deleteLater()
+        return image
+
     def mouseMoveEvent(self, event):
         if self.property('dockItem'):
             self._track_dock_pointer(event.position())
@@ -233,8 +257,10 @@ class LiquidButton(QPushButton):
             mime = QMimeData()
             mime.setData('application/x-goldennugget-dock', self.key.encode())
             drag.setMimeData(mime)
-            drag.setPixmap(self.grab())
-            drag.setHotSpot(self._press)
+            image=self._drag_image()
+            drag.setPixmap(image)
+            drag.setHotSpot(QPointF(self._press.x()*image.width()/max(1,self.width()),
+                                   self._press.y()*image.height()/max(1,self.height())).toPoint())
             self._press = None
             self.setProperty('dragGhost',True)
             self.update()

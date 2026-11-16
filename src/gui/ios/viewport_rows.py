@@ -110,10 +110,10 @@ class ViewportRows(QObject):
             self._build_index()
         top = self._content.mapFrom(viewport, QPoint()).y()
         bottom = top + viewport.height()
-        start = bisect_left(self._tops, top - 420 - self._max_height)
-        end = bisect_right(self._tops, bottom + 420)
+        start = bisect_left(self._tops, top - 700 - self._max_height)
+        end = bisect_right(self._tops, bottom + 700)
         desired = {row for y, last, row in self._indexed[start:end]
-                   if last >= top - 420}
+                   if last >= top - 700}
         for row in self._active - desired:
             bounds = self._bounds.get(row)
             if bounds is not None and bounds[1] >= top - 700 and bounds[0] <= bottom + 700:

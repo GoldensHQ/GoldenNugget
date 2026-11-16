@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.gui.ios.compat import device_family, is_tweak_compatible
+from src.gui.ios.control_guide import ControlGuideCard
 from src.gui.ios.components import (
     IOSSearchEmpty,
     IOSSearchField,
@@ -106,10 +107,14 @@ class IOSSectionContent(QWidget):
         search_row.addWidget(self.search, 1)
         search_row.addWidget(self.filter_control)
         root.addLayout(search_row)
-        self._description_note = QLabel(self.tr("Descriptions show intended effects. Check ? for compatibility and cautions."), self)
-        self._description_note.setContentsMargins(20, 6, 16, 0)
-        self._description_note.setWordWrap(True)
-        root.addWidget(self._description_note)
+        root.addSpacing(16)
+        self._description_card = ControlGuideCard(
+            self.tr("Tweaks Information"),
+            self.tr("Each card explains what its setting changes. Turn it on, then Apply Changes to send it to your device."), self)
+        hint_margin = QHBoxLayout()
+        hint_margin.setContentsMargins(16, 0, 16, 0)
+        hint_margin.addWidget(self._description_card)
+        root.addLayout(hint_margin)
         self._loading_label = QLabel(self.tr("Loading controls…"), self)
         self._loading_label.setContentsMargins(20, 8, 16, 0)
         self._loading_label.hide()
@@ -150,6 +155,7 @@ class IOSSectionContent(QWidget):
                 editor=getattr(switch,'_value_editor',None)
                 if editor is not None:
                     editor.setEnabled(checked and switch.isEnabled())
+            self._refresh_guide_counts()
             self._apply_search()
 
     def resizeEvent(self, event):
@@ -586,6 +592,8 @@ class IOSSectionContent(QWidget):
             self._search_sections.append((group, section_rows))
         self._building = False
         self._loading_label.hide()
+        for switch in self._tweak_switches.values():
+            switch.toggled.connect(self._refresh_guide_counts)
         self.refresh_section_counts()
         self._retheme()
         page = getattr(self.window, 'ios_tweaks', None)
@@ -647,6 +655,7 @@ class IOSSectionContent(QWidget):
 
     def refresh_section_counts(self):
         """Update enabled counts after a switch changes without rebuilding."""
+        self._refresh_guide_counts()
         for section, rows in self._search_sections:
             enabled_count = sum(
                 bool(getattr(tweaks.get(row[1]), "enabled", False))
@@ -659,10 +668,20 @@ class IOSSectionContent(QWidget):
                 header.setToolTip(QCoreApplication.translate("Nugget", "{0} of {1} enabled")
                                   .format(enabled_count, len(rows)))
 
+    def _refresh_guide_counts(self, *_args):
+        switches = tuple(
+            self._tweak_switches[tid]
+            for _, tid, _, _, compatible in self._search_rows
+            if compatible and tid in self._tweak_switches
+            and not (tid == TweakID.ForceSolariumFallback and self._solarium_visible is False)
+        )
+        self._description_card.set_counts(sum(switch.isChecked() for switch in switches), len(switches))
+
     def set_force_solarium_fallback_visible(self, visible: bool):
         # remember the intended state so a rebuild re-applies it (the card
         # pointer is recreated by rebuild())
         self._solarium_visible = visible
+        self._refresh_guide_counts()
         self._apply_search()
 
     def _make_favorite_button(self, tweak_id, title):
@@ -741,7 +760,7 @@ class IOSSectionContent(QWidget):
 
     def _retheme(self):
         c = ColorThemeManager.instance().colors
-        self._description_note.setStyleSheet(f"color: {c.text_secondary}; font-size: 12px; background-color: transparent;")
+        self._description_card.retheme()
         self.filter_control._retheme()
         for lbl in self._switch_labels:
             secondary = bool(lbl.property("tweakDescription"))

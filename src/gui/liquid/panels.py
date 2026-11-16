@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
 from src.gui.notifications import notify
 from src.gui.theme import ColorThemeManager
 
-from .choice_editor import GlassComboBox as QComboBox
 from .controls import GlassCheckBox, GlassPanel, LiquidButton
 from .placement import panel_rect
 
@@ -298,8 +297,8 @@ class RestoreDrawer(GlassPanel):
         self.review_area=area
         self._progress_mode=False
         column=QVBoxLayout(content)
-        column.setContentsMargins(18,14,18,16)
-        column.setSpacing(12)
+        column.setContentsMargins(18,10,18,10)
+        column.setSpacing(8)
         column.setAlignment(Qt.AlignTop)
         heading=QHBoxLayout()
         title=QLabel('Review Changes')
@@ -320,7 +319,7 @@ class RestoreDrawer(GlassPanel):
         self.device_render=ReviewDevice()
         body.addWidget(self.device_render,2)
         info=QVBoxLayout()
-        info.setSpacing(12)
+        info.setSpacing(7)
         info.setAlignment(Qt.AlignTop)
         body.addLayout(info,5)
         column.addLayout(body,1)
@@ -341,6 +340,13 @@ class RestoreDrawer(GlassPanel):
         self.retry_connection.clicked.connect(lambda:self.poll_readiness(force=True))
         self.retry_connection.hide()
         info.addWidget(self.retry_connection)
+        self.ack=GlassCheckBox('I understand and want to continue')
+        self.ack.toggled.connect(self.update_confirm)
+        info.addWidget(self.ack)
+        self.note=QLabel()
+        self.note.setWordWrap(True)
+        self.note.setStyleSheet('font-size:12px;color:#b9bec9;')
+        info.addWidget(self.note)
         self.disclosure=LiquidButton('Details ▾')
         self.disclosure.clicked.connect(self.toggle_details)
         info.addWidget(self.disclosure)
@@ -352,13 +358,6 @@ class RestoreDrawer(GlassPanel):
         self.cache_update=LiquidButton('Update backup cache')
         self.cache_update.clicked.connect(self.update_cache)
         info.addWidget(self.cache_update)
-        self.ack=GlassCheckBox('I understand and want to continue')
-        self.ack.toggled.connect(self.update_confirm)
-        info.addWidget(self.ack)
-        self.note=QLabel()
-        self.note.setWordWrap(True)
-        self.note.setStyleSheet('font-size:12px;color:#b9bec9;')
-        info.addWidget(self.note)
         self.confirm_button=window.ios_home.apply_btn
         self.progress_area=QScrollArea()
         self.progress_area.setWidgetResizable(True)
@@ -557,6 +556,7 @@ class RestoreDrawer(GlassPanel):
             self.note.setText('Selected changes are applied only after you confirm.')
         self._selection=self.selection()
         self.update_confirm()
+        self.review_area.verticalScrollBar().setValue(0)
         from .placement import reveal_sheet
         anchor=window.ios_home.apply_btn
         from PySide6.QtCore import QPoint
@@ -570,7 +570,7 @@ class RestoreDrawer(GlassPanel):
 
     def panel_size(self):
         button=self.window.ios_home.apply_btn
-        return QSize(min(button.width(),self.window.width()-32),min(460,self.window.height()-100))
+        return QSize(min(button.width(),self.window.width()-32),min(540,self.window.height()-100))
 
     def reposition(self):
         if self._progress_mode:
