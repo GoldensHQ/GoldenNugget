@@ -5,5 +5,5 @@ backend (hotload, crash handling, logging, update checks) never depends on the
 GUI package. ``src/gui/version.py`` re-exports them for the GUI side.
 """
 
-App_Version = "9.7.8"
+App_Version = "9.7.9"
 App_Build = 0
