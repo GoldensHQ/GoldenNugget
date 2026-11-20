@@ -86,7 +86,6 @@ RISKY_DAEMON_NAMES = frozenset({
     'carkitd',
     'clocksyncd',
     'donotdisturbd',
-    'fontservicesd',
     'keychainsharingmessagingd',
     'maps_geocorrectiond',
     'maps_pushdaemon',

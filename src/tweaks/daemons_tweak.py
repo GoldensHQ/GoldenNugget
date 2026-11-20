@@ -51,7 +51,6 @@ class Daemon(Enum):
     dataaccessd = ['com.apple.dataaccess.dataaccessd']
     exchangesyncd = ['com.apple.exchangesyncd']
     eyedropperd = ['com.apple.uikit.eyedropperd']
-    fontservicesd = ['com.apple.fontservicesd']
     homeenergyd = ['com.apple.homeenergyd']
     homeeventsd = ['com.apple.homeeventsd']
     jetpackassetd = ['com.apple.jetpackassetd']
@@ -389,7 +388,6 @@ ADDITIONAL_DAEMONS = (
     Daemon.dataaccessd,
     Daemon.exchangesyncd,
     Daemon.eyedropperd,
-    Daemon.fontservicesd,
     Daemon.homeenergyd,
     Daemon.homeeventsd,
     Daemon.jetpackassetd,

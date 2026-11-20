@@ -175,12 +175,16 @@ def _classify(exc_type, exc_value) -> dict:
         severity, fault, friendly = QT_TRANSLATE_NOOP("Nugget", "Serious"), QT_TRANSLATE_NOOP("Nugget", "The app (GoldenNugget)"), \
             QT_TRANSLATE_NOOP("Nugget", "GoldenNugget hit an internal problem.")
 
-    return {
+    info = {
         "severity": severity,
         "fault": fault,
         "friendly": friendly,
         "type_name": name,
     }
+    detailed = getattr(exc_value, "detailed_text", None)
+    if detailed:
+        info["detailed_text"] = str(detailed)
+    return info
 
 
 def _log_tail_for_report() -> str:
@@ -202,21 +206,97 @@ def _truncate(text: str, limit: int) -> str:
     return f"{head}\n... [log truncated ...]\n{tail}"
 
 
+def _diagnostics_text() -> str:
+    """Environment details to make bug reports reproducible (Qt-free, best-effort)."""
+    import platform
+
+    lines = []
+    try:
+        from src.version import App_Version, App_Build
+        version = str(App_Version)
+        build = int(App_Build)
+        version += f" (build {build})" if build > 0 else ""
+        lines.append(f"App: GoldenNugget {version}")
+    except Exception:
+        pass
+    lines.append(f"OS: {platform.platform()}")
+    lines.append(f"Machine: {platform.machine()}")
+    lines.append(f"Python: {sys.version.split()[0]} ({platform.python_implementation()})")
+    frozen = getattr(sys, "frozen", False)
+    lines.append(f"Runtime: {'PyInstaller' if frozen else 'source'} (frozen={frozen})")
+    try:
+        lines.append(f"Desktop: {_detect_desktop()}")
+    except Exception:
+        pass
+    try:
+        lines.append(f"Executable: {sys.executable}")
+    except Exception:
+        pass
+    # Key libraries (import only if missing; never required).
+    for pkg in ("pymobiledevice3",):
+        try:
+            mod = sys.modules.get(pkg) or __import__(pkg)
+            lines.append(f"{pkg}: {getattr(mod, '__version__', 'unknown')}")
+        except Exception:
+            pass
+    # Qt stack: report when present, skip in a Qt-free environment.
+    for modname in ("PySide6", "shiboken6"):
+        mod = sys.modules.get(modname)
+        if mod is None:
+            try:
+                mod = __import__(modname)
+            except Exception:
+                mod = None
+        if mod is not None:
+            lines.append(f"{modname}: {getattr(mod, '__version__', 'unknown')}")
+    qtcore = sys.modules.get("PySide6.QtCore")
+    if qtcore is not None:
+        try:
+            lines.append(f"Qt: {qtcore.qVersion()}")
+        except Exception:
+            lines.append(f"Qt: {getattr(qtcore, '__version__', 'unknown')}")
+    try:
+        lines.append(f"Log file: {get_log_path()}")
+    except Exception:
+        pass
+    return "\n".join(lines) or "unavailable"
+
+
 def _build_issue_body(info: dict, summary: str, traceback_text: str,
                       include_log: bool = True) -> str:
     """Assemble the text pasted into the prefilled GitHub issue."""
     try:
-        from src.version import App_Version
+        from src.version import App_Version, App_Build
         version = str(App_Version)
+        build = int(App_Build)
+        if build > 0:
+            version = f"{version} (build {build})"
     except Exception:
         version = "unknown"
     body = (
         "## GoldenNugget Error Report\n\n"
         f"**App version:** {version}\n"
-        f"**Severity:** {info['severity']}\n"
-        f"**Likely cause:** {info['fault']}\n\n"
-        f"**What went wrong:**\n{info['friendly']}\n\n"
+        f"**Severity:** {info.get('severity', 'Unknown')}\n"
+        f"**Likely cause:** {info.get('fault', 'Unknown')}\n"
+    )
+    thread = info.get("thread")
+    if thread:
+        body += f"**Thread:** {thread}\n"
+    try:
+        body += f"**Log:** `{get_log_path()}`\n"
+    except Exception:
+        pass
+    body += (
+        f"\n**What went wrong:**\n{info.get('friendly', 'An error occurred.')}\n\n"
         f"**Error:** `{summary}`\n\n"
+    )
+    detailed = info.get("detailed_text")
+    if detailed:
+        body += f"**Details:** {detailed}\n\n"
+    body += (
+        "<details><summary>Environment</summary>\n\n"
+        "```\n" + _truncate(_diagnostics_text(), 8 * 1024) + "\n```\n\n"
+        "</details>\n\n"
         "<details><summary>Technical details</summary>\n\n"
         "```\n" + _truncate(traceback_text, 16 * 1024) + "\n```\n\n"
         "</details>\n\n"
@@ -264,6 +344,8 @@ def _show_crash_dialog(summary: str, traceback_text: str, exc_type=None, exc_val
     presenter's CrashDialog reports the choice; None/False elsewhere).
     """
     info = _classify(exc_type, exc_value) if exc_type is not None else None
+    if info is not None:
+        info["thread"] = threading.current_thread().name
     if _presenter is None:
         # No user interface yet — fall back to printing so nothing is lost.
         print(f"CRASH: {summary}\n{traceback_text}", file=sys.stderr)

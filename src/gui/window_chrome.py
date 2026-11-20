@@ -68,13 +68,14 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
     QScrollBar,
     QTabBar,
     QWidget,
 )
 
 from src.gui import native_corners
-from src.gui.theme import ColorThemeManager, t
+from src.gui.theme import ColorThemeManager, t, theme_icon
 from src.version import App_Version
 
 #: Radius of the window's corners (masked out of the rectangle).
@@ -111,12 +112,19 @@ BUTTON_GAP = 8
 CONTROLS_LEFT = 12
 CONTROLS_TOP = 12
 
-#: Left space a top surface has to reserve for the buttons (left + width + air).
-CONTROLS_INSET = 76
+#: "Report a bug" button placed next to the window controls.
+BUG_BUTTON_SIZE = 18 if not CONTROLS_RIGHT else 20
+BUG_BUTTON_GAP = 8
 
-#: Right space a top surface reserves for the flat caption buttons
-#: (inset + 3 buttons + air). Real distance from the window edge.
-CONTROLS_TRAILING_INSET = FLAT_EDGE_INSET + 3 * FLAT_BUTTON_W + 12 if CONTROLS_RIGHT else 0
+_CONTROLS_WIDTH = (3 * BUTTON_SIZE + 2 * BUTTON_GAP) if not CONTROLS_RIGHT else 3 * FLAT_BUTTON_W
+
+#: Left space a top surface has to reserve for the chrome controls (buttons + bug).
+CONTROLS_INSET = (CONTROLS_LEFT + _CONTROLS_WIDTH + BUG_BUTTON_GAP + BUG_BUTTON_SIZE + 8
+                  if not CONTROLS_RIGHT else 76)
+
+#: Right space a top surface reserves for the flat caption buttons + bug button.
+CONTROLS_TRAILING_INSET = (FLAT_EDGE_INSET + 3 * FLAT_BUTTON_W + BUG_BUTTON_GAP + BUG_BUTTON_SIZE + 8
+                           if CONTROLS_RIGHT else 0)
 
 #: Right space the version label keeps from the window's right edge.
 VERSION_RIGHT_INSET = 16
@@ -539,6 +547,18 @@ class WindowChrome(QObject):
         native_corners.prepare_window(window)
 
         self.controls = WindowControls(window)
+        self.bug_btn = QPushButton(window)
+        self.bug_btn.setFixedSize(BUG_BUTTON_SIZE, BUG_BUTTON_SIZE)
+        self.bug_btn.setFlat(True)
+        self.bug_btn.setCursor(Qt.CursorShape.ArrowCursor)
+        self.bug_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.bug_btn.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.bug_btn.setStyleSheet(
+            "QPushButton { background: transparent; border: none; border-radius: 4px; padding: 0px; }"
+            "QPushButton:hover { background: rgba(127,127,127,0.18); }"
+        )
+        self.bug_btn.setToolTip(QCoreApplication.translate("Nugget", "Report a bug"))
+        self.bug_btn.clicked.connect(self._open_bug_report)
         # The window's name, drawn next to the buttons where a title bar would
         # put it. It is only shown while the shared header is hidden (the home
         # page is full screen), otherwise the header already names the page.
@@ -587,7 +607,19 @@ class WindowChrome(QObject):
         self._cursor_timer.timeout.connect(self._poll_cursor)
         self._cursor_timer.start()
 
+        self._retheme_bug_icon()
         self._relayout()
+
+    def _open_bug_report(self):
+        from src.gui.dialogs.bug_report_dialog import BugReportDialog
+        BugReportDialog(self._window).exec()
+
+    def _retheme_bug_icon(self):
+        color = ColorThemeManager.instance().colors.text_secondary
+        size = max(12, self.bug_btn.height() - 4)
+        icon = theme_icon(":/icon/bug.svg", color)
+        self.bug_btn.setIcon(icon)
+        self.bug_btn.setIconSize(self.bug_btn.size())
 
     # ---- zoom ------------------------------------------------------------
 
@@ -621,7 +653,8 @@ class WindowChrome(QObject):
     def _chrome_surface(self, watched) -> bool:
         """True for widgets this chrome owns (never part of the backdrop grab)."""
         if watched is self._window or watched is self._strip \
-                or watched is self.title or watched is self.version:
+                or watched is self.title or watched is self.version \
+                or watched is self.bug_btn:
             return True
         controls = self.controls
         return watched is controls or \
@@ -703,12 +736,19 @@ class WindowChrome(QObject):
             # top-right corner, the free corner air keeps the rounded clip.
             self.controls.move(self._window.width() - self.controls.width()
                                - FLAT_EDGE_INSET, FLAT_EDGE_INSET)
+            bug_x = self.controls.x() - BUG_BUTTON_GAP - self.bug_btn.width()
+            bug_y = FLAT_EDGE_INSET + (FLAT_BUTTON_H - self.bug_btn.height()) // 2
+            mid_top = FLAT_EDGE_INSET + (FLAT_BUTTON_H - self.title.height()) // 2
         else:
             self.controls.move(CONTROLS_LEFT, CONTROLS_TOP)
+            bug_x = self.controls.x() + self.controls.width() + BUG_BUTTON_GAP
+            bug_y = CONTROLS_TOP + (BUTTON_SIZE - self.bug_btn.height()) // 2
+            mid_top = CONTROLS_TOP + (BUTTON_SIZE - self.title.height()) // 2
         self.controls.raise_()
+        self.bug_btn.move(bug_x, bug_y)
+        self.bug_btn.raise_()
         # The name sits centred over the window's top strip (where a native
         # title bar would draw it); it is re-centred on every resize.
-        mid_top = CONTROLS_TOP + (BUTTON_SIZE - self.title.height()) // 2
         self.title.move((self._window.width() - self.title.width()) // 2, mid_top)
         self.title.raise_()
         # Where a native title bar would not put a build tag: away from the
@@ -743,6 +783,7 @@ class WindowChrome(QObject):
             # re-raise in the _relayout order (strip below buttons/name).
             self._strip.raise_()
             self.controls.raise_()
+            self.bug_btn.raise_()
             self.title.raise_()
             self.version.raise_()
 
@@ -751,6 +792,7 @@ class WindowChrome(QObject):
         self.title.adjustSize()
         self.version.setStyleSheet(t("window_version"))
         self.version.adjustSize()
+        self._retheme_bug_icon()
         self._strip.invalidate()
         self._relayout()
 
@@ -978,7 +1020,7 @@ class WindowChrome(QObject):
         child is not one of ours, raise the chrome back over it. The check is
         cheap enough for the 120 ms cursor poll.
         """
-        ours = (self.controls, self.title, self.version, self._strip)
+        ours = (self.controls, self.title, self.version, self._strip, self.bug_btn)
         for child in reversed(self._window.children()):
             if isinstance(child, QWidget):
                 if child in ours:

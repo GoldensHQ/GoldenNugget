@@ -182,10 +182,6 @@ ADDITIONAL_DAEMON_CONTROLS = {
         "Disable Screen Color Picker",
         "Stops the color picker sampling colors from the screen.",
     ),
-    "fontservicesd": (
-        "Disable Font Loading Service",
-        "Interrupts font loading or cause text to display incorrectly.",
-    ),
     "homeenergyd": (
         "Disable Home Energy Updates",
         "Stops energy-related features in Home updating.",

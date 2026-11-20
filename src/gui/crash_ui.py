@@ -95,19 +95,31 @@ class CrashDialog(QDialog):
         layout.addWidget(heading)
 
         severity_label = QLabel(QCoreApplication.translate("Nugget", "Severity: {0}").format(
-            QCoreApplication.translate("Nugget", info['severity'])))
+            QCoreApplication.translate("Nugget", info.get('severity', 'Serious'))))
         severity_label.setWordWrap(True)
         layout.addWidget(severity_label)
 
         fault_label = QLabel(QCoreApplication.translate("Nugget", "Likely cause: {0}").format(
-            QCoreApplication.translate("Nugget", info['fault'])))
+            QCoreApplication.translate("Nugget", info.get('fault', 'Unknown'))))
         fault_label.setWordWrap(True)
         layout.addWidget(fault_label)
 
-        friendly_label = QLabel(QCoreApplication.translate("Nugget", info['friendly']))
+        thread = info.get('thread')
+        if thread:
+            thread_label = QLabel(QCoreApplication.translate("Nugget", "Thread: {0}").format(thread))
+            thread_label.setWordWrap(True)
+            layout.addWidget(thread_label)
+
+        friendly_label = QLabel(QCoreApplication.translate("Nugget", info.get('friendly', 'An error occurred.')))
         friendly_label.setWordWrap(True)
         friendly_label.setStyleSheet("color: #007AFF; font-style: italic;")
         layout.addWidget(friendly_label)
+
+        detailed = info.get('detailed_text')
+        if detailed:
+            detail_label = QLabel(str(detailed))
+            detail_label.setWordWrap(True)
+            layout.addWidget(detail_label)
 
         self._searchable = QPlainTextEdit()
         self._searchable.setReadOnly(True)
