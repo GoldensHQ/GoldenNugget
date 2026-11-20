@@ -169,32 +169,51 @@ class BugReportDialog(QDialog):
         w = self.parentWidget()
         while w is not None and not w.isWindow():
             w = w.parentWidget()
-        if w is not None and w.isWindow():
+        if w is not None and w.isWindow() and w is not self:
             return w
-        return QGuiApplication.activeWindow() or self
+        active = QGuiApplication.activeWindow()
+        if active is not None and active is not self and active.isWindow():
+            return active
+        return w if (w is not None and w is not self) else None
 
     def _capture(self):
         target = self._target_window()
-        # Hide this dialog briefly so the screenshot shows the app, not the reporter overlaying it.
-        was_visible = self.isVisible()
-        if was_visible:
-            self.hide()
-            QCoreApplication.processEvents()
-            time.sleep(0.05)
-            QCoreApplication.processEvents()
+        # Make transparent instead of hide(): hiding/showing a modal exec()
+        # dialog is unstable on some platforms. Opacity reveals the app behind
+        # while keeping the dialog and its event loop intact.
+        prev_opacity = self.windowOpacity()
+        self.setWindowOpacity(0.0)
+        QCoreApplication.processEvents()
+        QCoreApplication.processEvents()
         try:
-            pix = target.grab() if target is not None else QPixmap()
+            pix = QPixmap()
+            if target is not None and target is not self:
+                try:
+                    pix = target.grab()
+                except Exception:
+                    pix = QPixmap()
+            if pix.isNull():
+                screen = (target.screen() if target is not None else None) or QGuiApplication.primaryScreen()
+                if screen is not None and target is not None and target is not self:
+                    try:
+                        geo = target.frameGeometry()
+                        pix = screen.grabWindow(0, geo.x(), geo.y(), geo.width(), geo.height())
+                    except Exception:
+                        pix = QPixmap()
+        except Exception:
+            pix = QPixmap()
         finally:
-            if was_visible:
-                self.show()
-                self.raise_()
-                self.activateWindow()
+            self.setWindowOpacity(prev_opacity)
+            self.raise_()
+            self.activateWindow()
         if pix.isNull():
             QMessageBox.warning(self, self.windowTitle(), _tr("Could not capture the window."))
             return
         self._screenshot = pix
         self._screenshot_path = self._write_temp(pix)
-        scaled = pix.scaled(self.preview.width() - 4, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        w = max(1, self.preview.width() - 4)
+        h = max(1, self.preview.height() - 4)
+        scaled = pix.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.preview.setPixmap(scaled)
         if self._screenshot_path:
             self.path_label.setText(_tr("Saved: {0}").format(self._screenshot_path))
