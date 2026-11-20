@@ -127,6 +127,12 @@ class Index(unittest.TestCase):
         self.assertEqual(data, b'{"format": 1}')
         self.assertGreater(saved_at, 0)
 
+    def test_index_generated(self):
+        index = preset_catalog.build_index([], generated=1_700_000_000)
+        self.assertEqual(preset_catalog.index_generated(json.dumps(index).encode()), 1_700_000_000)
+        self.assertEqual(preset_catalog.index_generated(b'{}'), 0)
+        self.assertEqual(preset_catalog.index_generated(b'not-json'), 0)
+
 
 class Templates(unittest.TestCase):
     def setUp(self):

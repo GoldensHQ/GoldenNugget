@@ -244,6 +244,20 @@ def parse_index(data: bytes, validate=None) -> tuple[list, int]:
     return entries, rejected
 
 
+def index_generated(data: bytes) -> int:
+    """Unix time when the catalog was published, or 0 when the index has none."""
+    try:
+        payload = json.loads(data.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError, AttributeError):
+        return 0
+    value = payload.get("generated") if isinstance(payload, dict) else None
+    try:
+        generated = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return generated if generated > 0 else 0
+
+
 def parse_catalog(data: bytes, validate=None) -> tuple[list, list, int]:
     """Return (presets, templates, number of rejected rows) from index.json bytes."""
     if len(data) > MAX_INDEX_BYTES:

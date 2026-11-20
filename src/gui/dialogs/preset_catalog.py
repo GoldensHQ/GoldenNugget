@@ -250,6 +250,7 @@ class CatalogDialog(_ThemedDialog):
         self.templates = templates
         self._saved_at = saved_at
         self._rejected = rejected
+        self._published_at = preset_catalog.index_generated(data)
         self.refresh_installed()
         return True
 
@@ -257,6 +258,10 @@ class CatalogDialog(_ThemedDialog):
         """Re-read what is imported or downloaded, for the update marks."""
         self.installed = preset_catalog.installed_items(self.pm)
         text = _tr("{0} preset(s) and {1} template(s) in the catalog.").format(len(self.entries), len(self.templates))
+        published = getattr(self, "_published_at", 0) or 0
+        if published:
+            text += " " + _tr("Published {0}.").format(
+                time.strftime("%Y-%m-%d", time.localtime(published)))
         if getattr(self, "_rejected", 0):
             text += " " + _tr("{0} damaged entry(s) were skipped.").format(self._rejected)
         updates = self.update_count()
