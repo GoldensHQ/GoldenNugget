@@ -32,7 +32,7 @@ from src.utils.i18n import QT_TRANSLATE_NOOP
 from src.utils.paths import app_data_dir, cache_dir
 
 CATALOG_REPO = "GoldensHQ/GoldenNugget-Presets"
-INDEX_URL = "https://goldennugget-team.github.io/GoldenNugget-Presets/index.json"
+INDEX_URL = "https://goldenshq.github.io/GoldenNugget-Presets/index.json"
 REPO_URL = f"https://github.com/{CATALOG_REPO}"
 TEMPLATES_URL = INDEX_URL.rsplit("/", 1)[0] + "/templates/"
 TEMPLATES_DIR_NAME = "catalog_templates"
