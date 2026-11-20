@@ -15,7 +15,9 @@ from PySide6.QtWidgets import QApplication, QBoxLayout, QDialog, QLineEdit, QWid
 
 from src.gui.ios.apply import IOSApplyPage
 from src.gui.ios.tweaks import IOSSectionContent
+from src.gui.liquid.navigation import LiquidNavBar
 from src.gui.main_window_mixins import NavigationMixin
+from src.gui.window_chrome import CONTROLS_RIGHT, FLAT_BUTTON_H, FLAT_EDGE_INSET
 
 
 class NavigationWindow(QWidget, NavigationMixin):
@@ -73,6 +75,19 @@ class UILayoutTests(unittest.TestCase):
         window._go_back.assert_not_called()
         self.assertTrue(NavigationMixin.eventFilter(window, editor, escape))
         window._go_back.assert_called_once()
+
+    def test_header_moves_into_the_caption_button_band(self):
+        bar = LiquidNavBar("Tweaks")
+        self.addCleanup(bar.deleteLater)
+        bar.set_categories([("Section", lambda: None)] * 3)
+        bar.resize(1200, bar.height())
+        bar.show()
+        self.app.processEvents()
+        # macOS keeps the traffic-light band; the flat chrome starts level with
+        # the caption buttons, and the pills never run under them either way.
+        expected = FLAT_EDGE_INSET if CONTROLS_RIGHT else 44
+        self.assertEqual(bar.layout().contentsMargins().top(), expected)
+        self.assertGreaterEqual(bar._categories.y(), expected + FLAT_BUTTON_H)
 
     def test_apply_secondary_buttons_keep_large_flexible_targets(self):
         window = Mock()
