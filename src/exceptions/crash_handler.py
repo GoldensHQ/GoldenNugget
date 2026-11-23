@@ -212,7 +212,7 @@ def _diagnostics_text() -> str:
 
     lines = []
     try:
-        from src.version import App_Version, App_Build
+        from src.version import App_Build, App_Version
         version = str(App_Version)
         build = int(App_Build)
         version += f" (build {build})" if build > 0 else ""
@@ -266,7 +266,7 @@ def _build_issue_body(info: dict, summary: str, traceback_text: str,
                       include_log: bool = True) -> str:
     """Assemble the text pasted into the prefilled GitHub issue."""
     try:
-        from src.version import App_Version, App_Build
+        from src.version import App_Build, App_Version
         version = str(App_Version)
         build = int(App_Build)
         if build > 0:

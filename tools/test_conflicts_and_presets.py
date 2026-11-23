@@ -147,12 +147,50 @@ class PresetExchange(unittest.TestCase):
         self.assertTrue(data['metadata']['partial'])
         self.assertTrue(self.pm.import_preset(str(self.source))[0])
 
+    def test_saved_and_autosaved_presets_carry_the_app_version(self):
+        from src.version import App_Version
+
+        selected = {TweakID.RTL: enabled(BasicPlistTweak(FileLocation.globalPreferences, 'RTL', True))}
+        with patch('src.controllers.preset_manager.tweaks', selected):
+            self.assertTrue(self.pm.save_preset('Stamped'))
+        saved = json.loads(Path(self.pm.get_preset_path('Stamped')).read_text(encoding='utf-8'))
+        self.assertEqual(saved['GNUGGET_VERSION'], App_Version)
+
+        self.assertTrue(self.pm.save_preset('AutoSave', _data={'tweaks': {'RTL': {'enabled': True}}}))
+        autosaved = json.loads(Path(self.pm.get_preset_path('AutoSave')).read_text(encoding='utf-8'))
+        self.assertEqual(autosaved['GNUGGET_VERSION'], App_Version)
+
+    def test_export_and_import_keep_the_creator_version(self):
+        from src.version import App_Version
+
+        creator_version = App_Version + '-older'
+        self.source.write_text(json.dumps({
+            'GNUGGET_VERSION': creator_version,
+            'tweaks': {'RTL': {'enabled': True}},
+        }), encoding='utf-8')
+        ok, name = self.pm.import_preset(str(self.source))
+        self.assertTrue(ok)
+        stored = Path(self.pm.get_preset_path(name))
+        self.assertEqual(json.loads(stored.read_text(encoding='utf-8'))['GNUGGET_VERSION'], creator_version)
+
+        exported = Path(self.tmp.name) / 'exported.json'
+        self.assertTrue(self.pm.export_preset(name, str(exported)))
+        self.assertEqual(json.loads(exported.read_text(encoding='utf-8'))['GNUGGET_VERSION'], creator_version)
+
+        legacy = Path(self.tmp.name) / 'legacy.json'
+        legacy.write_text(json.dumps({'tweaks': {'RTL': {'enabled': True}}}), encoding='utf-8')
+        ok, name = self.pm.import_preset(str(legacy))
+        self.assertTrue(ok)
+        self.assertEqual(json.loads(Path(self.pm.get_preset_path(name)).read_text(
+            encoding='utf-8'))['GNUGGET_VERSION'], App_Version)
+
     def test_malformed_files_are_not_saved(self):
         for value in ([], {}, {'metadata': {}}, {'tweaks': []},
                       {'tweaks': {'RTL': True}}, {'tweaks': {}, 'metadata': {'tags': 'bad'}},
                       {'tweaks': {'RTL': {'enabled': 'false'}}},
                       {'tweaks': {'Daemons': {'value': []}}},
-                      {'tweaks': {'StatusBar': {'override_data': '??'}}}):
+                      {'tweaks': {'StatusBar': {'override_data': '??'}}},
+                      {'tweaks': {}, 'GNUGGET_VERSION': 10}):
             with self.subTest(value=value):
                 self.source.write_text(json.dumps(value), encoding='utf-8')
                 self.assertFalse(self.pm.import_preset(str(self.source))[0])

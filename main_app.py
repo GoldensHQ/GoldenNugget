@@ -319,7 +319,6 @@ def main() -> int:
     print("[init] HotLoad ok")
 
     widget = MainWindow(device_manager=dm, translator=translator)
-    translator.fix_ui_for_rtl(widget.ui)
     # Open a little roomier than the 1000x600 minimum when the screen allows.
     avail = widget.screen().availableGeometry()
     widget.resize(max(1000, min(1100, avail.width() - 80)),

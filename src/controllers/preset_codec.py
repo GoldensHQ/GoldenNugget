@@ -10,6 +10,9 @@ def valid_import_structure(data) -> bool:
     """
     if not isinstance(data, dict) or not isinstance(data.get("tweaks"), dict):
         return False
+    stamp = data.get("GNUGGET_VERSION")
+    if stamp is not None and not isinstance(stamp, str):
+        return False
     meta = data.get("metadata", {})
     if not isinstance(meta, dict):
         return False

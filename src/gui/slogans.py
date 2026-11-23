@@ -2,8 +2,7 @@
 
 Picked ONCE per process (:func:`launch_slogan` returns one of ``SLOGANS`` for
 the whole run) so widgets created later — dock rebuilts, panel rebuilds — all
-show the same launch's slogan. Both brand buttons render it: the liquid dock's
-``LiquidBrand`` (the live bottom bar) and the parked iOS ``NavigationBrand``.
+show the same launch's slogan; the liquid dock's ``LiquidBrand`` renders it.
 """
 import random
 

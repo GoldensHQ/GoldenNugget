@@ -6,8 +6,7 @@ and Linux alike. Everything the native frame used to provide is done here:
 
 * **Window buttons** — close / minimize / zoom, drawn from the app's palette
   and floated in the window's top-left corner, where a title bar puts them.
-  They stay above the page content, so they are visible in every mode
-  (including the one with the navigation sidebar).
+  They stay above the page content, so they are visible on every page.
 * **Rounded corners** — the window is clipped to a rounded rect
   (``rounded_region``), and the clip is dropped while maximized or full screen.
 
@@ -19,8 +18,7 @@ antialiased edge, and the native drop shadow survives) and Windows 11 rounds
 through ``DwmSetWindowAttribute`` — and the mask below is the fallback for
 everything else (Linux, Windows 10, a platform call that fails). The mask is
 exact in shape but 1-bit, so that edge stays hard.
-* **Moving** — the shared header (and the sidebar) drag the window; a double
-  click zooms it.
+* **Moving** — the shared header drags the window; a double click zooms it.
 * **Resizing** — the window edges and corners resize it, with the matching
   cursor. ``startSystemResize`` is tried first so the platform keeps its own
   resize loop where it has one; otherwise the geometry is driven directly.
@@ -28,9 +26,8 @@ exact in shape but 1-bit, so that edge stays hard.
 Nothing here talks to a platform API: the same code path runs on every OS.
 (That is also why the corners are a mask — see below.)
 
-The surfaces that sit in the top-left corner must leave room for the buttons —
-the header through ``LiquidNavBar.set_leading_inset`` and the sidebar through
-``NavigationSidebar.set_top_inset``.
+The surface that sits in the top-left corner must leave room for the buttons —
+the header through ``LiquidNavBar.set_leading_inset``.
 
 Offline regression suite: ``tools/test_window_chrome.py``.
 """
@@ -128,9 +125,6 @@ CONTROLS_TRAILING_INSET = (FLAT_EDGE_INSET + 3 * FLAT_BUTTON_W + BUG_BUTTON_GAP 
 
 #: Right space the version label keeps from the window's right edge.
 VERSION_RIGHT_INSET = 16
-
-#: Height a surface anchored at the window's left edge (the sidebar) reserves.
-TITLE_BAR_HEIGHT = 30
 
 #: Room a page that starts at the window's top edge reserves for the buttons
 #: (the home page has no shared header, so it pads its own content instead).
@@ -523,15 +517,14 @@ def window_controls_zoom(window):
 class WindowChrome(QObject):
     """Frameless chrome for one top-level window.
 
-    *header* and *sidebar* are the surfaces the window can be dragged by; they
-    are also the surfaces that get the button room reserved.
+    *header* is the surface the window can be dragged by; it also gets the
+    button room reserved.
     """
 
-    def __init__(self, window, header=None, sidebar=None, pages=()):
+    def __init__(self, window, header=None, pages=()):
         super().__init__(window)
         self._window = window
         self._header = header
-        self._sidebar = sidebar
         self._resize_grab = None
         self._move_grab = None
         self._move_dragging = False
@@ -587,8 +580,6 @@ class WindowChrome(QObject):
             header.set_leading_inset(0 if CONTROLS_RIGHT else CONTROLS_INSET)
         if header is not None and hasattr(header, "set_trailing_inset"):
             header.set_trailing_inset(CONTROLS_TRAILING_INSET)
-        if sidebar is not None and hasattr(sidebar, "set_top_inset"):
-            sidebar.set_top_inset(TITLE_BAR_HEIGHT)
         for page in pages:
             # Pages without the shared header reach the window's top edge, so
             # they make room for the buttons themselves.
@@ -616,7 +607,6 @@ class WindowChrome(QObject):
 
     def _retheme_bug_icon(self):
         color = ColorThemeManager.instance().colors.text_secondary
-        size = max(12, self.bug_btn.height() - 4)
         icon = theme_icon(":/icon/bug.svg", color)
         self.bug_btn.setIcon(icon)
         self.bug_btn.setIconSize(self.bug_btn.size())
@@ -959,9 +949,9 @@ class WindowChrome(QObject):
             return True
         if self._accepts_press(widget):
             return False
-        for surface in (self._header, self._sidebar):
-            if surface is None:
-                continue
+        surface = self._header
+        if surface is None:
+            return False
             walk = widget
             while walk is not None and walk is not surface:
                 if not isinstance(walk, QLabel):
@@ -1043,18 +1033,18 @@ class WindowChrome(QObject):
             pass  # the page was rebuilt while the pointer sat on its edge
 
 
-def install_window_chrome(window, header=None, sidebar=None, pages=(),
+def install_window_chrome(window, header=None, pages=(),
                           enabled: bool = True):
     """Give *window* the app's own frame instead of the OS one.
 
-    Returns the :class:`WindowChrome` (or None when disabled). *header* and
-    *sidebar* are the surfaces that can drag the window (and that reserve room
-    for the buttons); *pages* are the pages that reach the window's top edge
-    and therefore pad their own content.
+    Returns the :class:`WindowChrome` (or None when disabled). *header* is the
+    surface that can drag the window (and that reserves room for the buttons);
+    *pages* are the pages that reach the window's top edge and therefore pad
+    their own content.
     """
     if not enabled:
         return None
-    chrome = WindowChrome(window, header=header, sidebar=sidebar, pages=pages)
+    chrome = WindowChrome(window, header=header, pages=pages)
     # The free helpers (``window_controls_zoom``) find the chrome this way.
     window.window_chrome = chrome
     return chrome

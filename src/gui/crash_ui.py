@@ -291,12 +291,6 @@ def _queue_crash_dialog_on_gui_thread(app, summary: str, traceback_text: str,
     # _handle_crash and the stderr print above are the survivor of record.
 
 
-def _build_and_exec_crash_dialog(summary: str, traceback_text: str,
-                                 info: Optional[dict]) -> None:
-    dialog = CrashDialog(summary=summary, traceback_text=traceback_text, info=info)
-    _exec_dialog_on_gui_thread(dialog)
-
-
 def show_error_dialog(summary: str, traceback_text: str, info: Optional[dict] = None,
                       backup_path: Optional[str] = None,
                       on_restore: Optional[Callable[[], None]] = None) -> bool:

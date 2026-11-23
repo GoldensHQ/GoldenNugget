@@ -24,8 +24,6 @@ class ReconnectWindow(DeviceBarMixin):
     def __init__(self):
         self.device_manager = Mock(devices=[], current_device_index=0)
         self.device_manager.get_current_device_udid.return_value = 'target'
-        self.ui = Mock()
-        self.ui.devicePicker.count.return_value = 1
         self.ios_home = Mock()
         self.connect_placeholder = Mock()
         self._device_refresh_timer = Mock()
@@ -33,8 +31,6 @@ class ReconnectWindow(DeviceBarMixin):
         self.apply_in_progress = False
         self._device_change_refresh_pending = False
         self._last_connection_error = ''
-        self.noneText = 'None'
-        self.show_home = Mock()
         self.toggle_thread_btns = Mock()
         self.change_selected_device = Mock()
         self._apply_hidden_feature_gating = Mock()

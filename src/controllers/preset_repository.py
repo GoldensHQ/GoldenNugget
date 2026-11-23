@@ -8,6 +8,8 @@ import tempfile
 import time
 from threading import RLock
 
+from .preset_version import stamp_preset_version
+
 PRESET_VERSION = 2
 
 
@@ -93,6 +95,7 @@ class PresetRepository:
             meta["created_at"] = existing_meta["created_at"]
 
         data["metadata"] = meta
+        stamp_preset_version(data)
 
         file_path = self.get_preset_path(name)
         temporary = None

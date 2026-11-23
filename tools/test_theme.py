@@ -242,6 +242,7 @@ class Themes(unittest.TestCase):
         dm.pref_manager.settings = self.settings
         with patch.object(MainWindow, 'refresh_devices'), patch.object(MainWindow, '_load_last_preset'), \
              patch.object(MainWindow, '_register_tweak_autosave'), \
+             patch.object(MainWindow, '_prewarm_control_pages'), \
              patch('src.gui.main_window.DeviceMonitorThread.start'), \
              patch('PySide6.QtCore.QStandardPaths.writableLocation', return_value=self.tmp.name):
             window = MainWindow(dm, Translator(APP, self.settings))

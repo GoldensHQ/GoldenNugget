@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """Offline guard: no TYPE_CHECKING-only name may be used in a live annotation.
 
-A real startup crash on Python 3.13:
-
-  NameError: name 'Ui_Nugget' is not defined
-    main_app -> src.gui.translator
-
-``translator.py`` imported ``Ui_Nugget`` under ``if TYPE_CHECKING:`` and then
-used it as a parameter annotation. On Python 3.14+ PEP 649 makes annotations
-lazy, so it imports fine; on 3.13 (and 3.12, 3.11, ...) annotations are
-evaluated when the ``def`` runs, so merely importing the module raised
-NameError -- the app died before its window was built.
+A startup crash on Python 3.13 was caused by ``src.gui.translator`` importing
+``Ui_Nugget`` under ``if TYPE_CHECKING:`` and using it in a live annotation.
+That generated UI class and the RTL fix-up method are both gone now, so this
+suite keeps the static hazard scan and verifies neither came back.
 
 The dev virtualenv is 3.15, so running the test suite on 3.15 cannot see this
 class of bug. This check is therefore static: it resolves the annotation
@@ -116,23 +110,12 @@ def test_no_type_checking_hazards():
 
 def test_translator_regression():
     print("\nthe exact startup crash stays fixed")
+    import src.gui.translator as mod
     from src.gui.translator import Translator
 
     check("translator imports", Translator is not None)
-    ann = Translator.fix_ui_for_rtl.__annotations__.get("ui")
-    check("fix_ui_for_rtl's annotation is never evaluated at def time",
-          isinstance(ann, str), f"{ann!r}")
-    check("and it still names the UI type", ann == "Ui_Nugget", f"{ann!r}")
-
-    # the name really is absent at runtime -- that is what used to raise
-    import src.gui.translator as mod
-    try:
-        eval("Ui_Nugget", vars(mod))
-        resolvable = True
-    except NameError:
-        resolvable = False
-    check("Ui_Nugget is TYPE_CHECKING-only, so the annotation must stay lazy",
-          not resolvable)
+    check("no RTL fix-up pin remains", not hasattr(Translator, "fix_ui_for_rtl"))
+    check("Ui_Nugget is gone for good", not hasattr(mod, "Ui_Nugget"))
 
 
 def main():

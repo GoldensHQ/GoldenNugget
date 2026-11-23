@@ -2,8 +2,10 @@
 """Offline test for the protective backup cache (no device needed).
 
 Exercises: cache validity, hardlink working copies, prune interplay,
-PosterBoard DB extraction. Run: python tools/test_protective_cache.py
+PosterBoard DB extraction, and first-use lock creation.
+Run: python tools/test_protective_cache.py
 """
+import asyncio
 import os
 import plistlib
 import sqlite3
@@ -13,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src.exceptions.nugget_exception import NuggetException
 from src.restore.protective import (
     ProtectiveBackupCache,
     clean_backup_for_restore,
@@ -21,6 +24,7 @@ from src.restore.protective import (
     make_restore_view,
 )
 from src.restore.protective_cache import CACHE_FILTER_REVISION
+from src.utils.file_lock import FileLock
 
 UDID = "00008101-TESTUDID"
 PASS = 0
@@ -50,10 +54,57 @@ def make_manifest(device_dir: Path, rows):
     conn.close()
 
 
+def test_first_refresh_creates_cache_root(tmp: Path):
+    """A first apply has no cache folder; that is not a competing process."""
+    from src.restore import protective as _protective
+
+    udid = "00008101-FRESH"
+    base = tmp / "fresh-cache"
+    cache = _cache_in(base, udid, encrypted=False)
+    check("fresh cache folder starts absent", not base.exists())
+
+    calls = []
+
+    async def _fake_backup(*_args, **_kwargs):
+        calls.append(True)
+        return False
+
+    original_backup = _protective.perform_protective_backup
+    _protective.perform_protective_backup = _fake_backup
+    try:
+        asyncio.run(cache.refresh(None))
+    finally:
+        _protective.perform_protective_backup = original_backup
+
+    check("first refresh reached the backup", bool(calls))
+    check("first refresh created the cache folder", base.is_dir())
+    check("first refresh wrote the master marker", (base / f"{udid}.json").is_file())
+    check("refresh lock released", not (base / f".refresh-{udid}.lock").exists())
+
+    nested = tmp / "file-lock-parent" / "lock"
+    lock = FileLock(str(nested))
+    check("FileLock creates a missing parent", lock.tryLock(0))
+    check("FileLock records the owner",
+          nested.read_text(encoding="utf-8").strip() == str(os.getpid()))
+    lock.unlock()
+    check("FileLock removes its lock file", not nested.exists())
+
+    blocker = tmp / "not-a-folder"
+    blocker.write_text("x", encoding="utf-8")
+    blocked = _cache_in(blocker / "backup_cache", "00008101-BLOCKED", encrypted=False)
+    try:
+        asyncio.run(blocked.refresh(None))
+    except NuggetException as error:
+        check("unwritable cache names the real problem", "Cannot create" in str(error))
+    else:
+        check("unwritable cache names the real problem", False)
+
+
 def main():
     from pathlib import Path
     tmp = Path(tempfile.mkdtemp(prefix="gn_cache_test_"))
     base = tmp / "cache"
+    test_first_refresh_creates_cache_root(tmp)
 
     # --- build a fake master via the real cache paths ---
     cache = ProtectiveBackupCache(UDID, product_version="27.0")

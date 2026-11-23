@@ -221,24 +221,33 @@ def test_loaded_preset_survives_the_restart():
 
 
 # =============================================================================
-def test_banner_and_settings_hook():
+def test_home_preset_label_and_settings_hook():
     print("\nthe UI tells the truth about it")
-    from src.gui.preset_widget import PresetBanner
+    from types import SimpleNamespace
 
-    banner = PresetBanner.__new__(PresetBanner)
+    from src.gui.ios.home import IOSHomePage
+
+    home = IOSHomePage.__new__(IOSHomePage)
     seen = []
-    banner.active_lbl = type("L", (), {"setText": lambda _s, t: seen.append(t)})()
 
-    banner.set_active_preset("My Setup", autosave=False)
-    check("a loaded preset is always named", seen[-1] == "My Setup")
+    def refresh(autosave, preset):
+        home.presets_lbl = SimpleNamespace(setText=seen.append)
+        home.window = SimpleNamespace(
+            autosave_enabled=lambda: autosave,
+            settings=SimpleNamespace(value=lambda *_a, **_kw: preset))
+        home.refresh_preset_widget()
+        return seen[-1]
 
-    banner.set_active_preset("", autosave=True)
-    check("no preset + autosave on says AutoSave", seen[-1] == "AutoSave")
+    check("a loaded preset is always named",
+          refresh(True, "My Setup") == "My Setup")
 
-    banner.set_active_preset("", autosave=False)
+    check("no preset + autosave on says AutoSave",
+          refresh(True, "") == "AutoSave")
+
     check("no preset + autosave off must not claim AutoSave",
-          seen[-1] != "AutoSave", seen[-1])
-    check("it says the state is not saved", seen[-1] == "Not Saved", seen[-1])
+          refresh(False, "") != "AutoSave", seen[-1])
+    check("it points at the preset manager",
+          refresh(False, "") == "Manage presets", seen[-1])
 
     from src.gui.ios import presets as presets_mod
     src = open(presets_mod.__file__, encoding="utf-8").read()
@@ -347,7 +356,7 @@ def main():
     test_writes_are_gated()
     test_startup_load()
     test_loaded_preset_survives_the_restart()
-    test_banner_and_settings_hook()
+    test_home_preset_label_and_settings_hook()
     test_status_bar_survives_the_round_trip()
     print(f"\nALL {PASS} CHECKS PASSED")
 

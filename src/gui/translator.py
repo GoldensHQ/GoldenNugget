@@ -105,18 +105,3 @@ class Translator:
         """Directory holding the app's .qm files on disk (bundled or source)."""
         base = getattr(sys, "_MEIPASS", os.path.join(os.path.dirname(__file__), "..", ".."))
         return os.path.join(base, "src", "qt", "translations")
-
-    def fix_ui_for_rtl(self, ui: Ui_Nugget):  # noqa: F821 (name deleted with src/qt/mainwindow_ui.py; kept for pyside6-lupdate pin)  # pyright: ignore[reportUndefinedVariable]
-        curr_locale = self.get_saved_locale_code()
-        if curr_locale == "ar" or curr_locale == "ar_SA" or curr_locale == "ar_EG":
-            # need to correct for stuff
-            # TOP BAR
-            ui.phoneIconBtn.setStyleSheet("QToolButton {\n	border-top-left-radius: 0px;\n	border-bottom-left-radius: 0px;\n}")
-            ui.titleBar.setStyleSheet("QToolButton {\n	border-top-right-radius: 0px;\n	border-bottom-right-radius: 0px;\n}")
-            # HOME PAGE
-            ui.leminTwitterBtn.setStyleSheet("QToolButton {\n	border-top-left-radius: 0px;\n	border-bottom-left-radius: 0px;\n	background: none;\n	border: 1px solid #3b3b3b;\n	border-left: none;\n}\n\nQToolButton:pressed {\n    background-color: #535353;\n    color: #FFFFFF;\n}")
-            ui.leminKoFiBtn.setStyleSheet("QToolButton {\n	border-top-right-radius: 0px;\n	border-bottom-right-radius: 0px;\n	background: none;\n	border: 1px solid #3b3b3b;\n}\n\nQToolButton:pressed {\n    background-color: #535353;\n    color: #FFFFFF;\n}")
-            ui.posterRestoreBtn.setStyleSheet("QToolButton {\n	border-top-left-radius: 0px;\n	border-bottom-left-radius: 0px;\n	background: none;\n	border: 1px solid #3b3b3b;\n	border-left: none;\n}\n\nQToolButton:pressed {\n    background-color: #535353;\n    color: #FFFFFF;\n}")
-            ui.translatorsBtn.setStyleSheet("QToolButton {\n	border-top-left-radius: 0px;\n	border-bottom-left-radius: 0px;\n	background: none;\n	border: 1px solid #3b3b3b;\n	border-left: none;\n}\n\nQToolButton:pressed {\n    background-color: #535353;\n    color: #FFFFFF;\n}")
-            ui.mikasaBtn.setStyleSheet("QToolButton {\n	border-top-right-radius: 0px;\n	border-bottom-right-radius: 0px;\n	background: none;\n	border: 1px solid #3b3b3b;\n}\n\nQToolButton:pressed {\n    background-color: #535353;\n    color: #FFFFFF;\n}")
-            ui.qtBtn.setStyleSheet("QToolButton {\n	border-top-right-radius: 0px;\n	border-bottom-right-radius: 0px;\n	background: none;\n	border: 1px solid #3b3b3b;\n}\n\nQToolButton:pressed {\n    background-color: #535353;\n    color: #FFFFFF;\n}")

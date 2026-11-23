@@ -791,7 +791,6 @@ class IOSHomePage(QWidget):
     def open_apply_classic(self):
         """Open the dedicated Apply page before starting an operation."""
         self.window.show_ios_page(6)
-        self.window._sync_sidebar_selection()
 
     def reset_tweaks(self):
         from src.gui.dialogs.reset_dialog import ResetDialog

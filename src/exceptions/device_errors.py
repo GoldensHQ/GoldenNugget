@@ -6,35 +6,39 @@ import re
 import pymobiledevice3.exceptions as pm3_exc
 
 
-def is_find_my_error(exc: BaseException) -> bool:
+def is_find_my_error(exc: BaseException | None) -> bool:
     """Recognize explicit Find My restore errors, including wrapped causes."""
+    if not isinstance(exc, BaseException):
+        return False
     pending = [exc]
     inspected = set()
     while pending:
         current = pending.pop()
-        if id(current) in inspected:
+        if not isinstance(current, BaseException) or id(current) in inspected:
             continue
         inspected.add(id(current))
         if "find my" in str(current).casefold():
             return True
         pending.extend(cause for cause in
                        (current.__cause__, current.__context__)
-                       if cause is not None)
+                       if isinstance(cause, BaseException))
         pending.extend(arg for arg in current.args
                        if isinstance(arg, BaseException))
     return False
 
 
-def is_icloud_restore_in_progress(exc: BaseException) -> bool:
+def is_icloud_restore_in_progress(exc: BaseException | None) -> bool:
+    if not isinstance(exc, BaseException):
+        return False
     pending = [exc]
     seen = set()
     while pending:
         current = pending.pop()
-        if id(current) in seen:
+        if not isinstance(current, BaseException) or id(current) in seen:
             continue
         seen.add(id(current))
         text = str(current).casefold()
-        if re.search(r'mberrordomain/25(?:\\D|$)', text) or (
+        if re.search(r'mberrordomain/25(?:\D|$)', text) or (
                 'icloud restore' in text and 'in progress' in text):
             return True
         pending.extend(error for error in (current.__cause__, current.__context__, *current.args)
@@ -42,8 +46,10 @@ def is_icloud_restore_in_progress(exc: BaseException) -> bool:
     return False
 
 
-def is_device_locked_error(exc: Exception) -> bool:
+def is_device_locked_error(exc: BaseException | None) -> bool:
     """Check if an exception indicates the device is locked (ErrorCode 208)."""
+    if not isinstance(exc, BaseException):
+        return False
     if is_device_lock_required_error(exc):
         return True
     msg = str(exc)
@@ -53,8 +59,10 @@ def is_device_locked_error(exc: Exception) -> bool:
         msg, re.IGNORECASE))
 
 
-def is_connection_error(exc: Exception) -> bool:
+def is_connection_error(exc: BaseException | None) -> bool:
     """Check if an exception is a transient connection failure worth retrying."""
+    if not isinstance(exc, BaseException):
+        return False
     from src.exceptions.nugget_exception import PosterBoardBackupEncryptionError
     if isinstance(exc, PosterBoardBackupEncryptionError) or is_icloud_restore_in_progress(exc):
         return False
@@ -70,7 +78,7 @@ def is_connection_error(exc: Exception) -> bool:
     )) or "connection" in msg or "incomplete" in msg or "terminated" in msg
 
 
-def is_device_lock_required_error(exc: Exception) -> bool:
+def is_device_lock_required_error(exc: BaseException | None) -> bool:
     """True when lockdown refused to start a service because the device is locked.
 
     Distinct from :func:`is_device_locked_error`, which sniffs the
@@ -80,14 +88,18 @@ def is_device_lock_required_error(exc: Exception) -> bool:
     actually wrong: the device just has to be unlocked. That makes it a
     wait-and-retry condition, not a failure.
     """
+    if not isinstance(exc, BaseException):
+        return False
     if isinstance(exc, (pm3_exc.PasswordRequiredError, pm3_exc.PasscodeRequiredError)):
         return True
     msg = str(exc)
     return "PasswordProtected" in msg or "PasscodeRequired" in msg
 
 
-def is_transient_restore_error(error) -> bool:
+def is_transient_restore_error(error: BaseException | None) -> bool:
     """True for Phase 3 errors that mean 'device still booting, try again'."""
+    if not isinstance(error, BaseException):
+        return False
     if is_find_my_error(error) or is_icloud_restore_in_progress(error):
         return False
     name = type(error).__name__

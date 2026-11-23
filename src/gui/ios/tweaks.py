@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
 )
 
 from src.gui.ios.compat import device_family, is_tweak_compatible
-from src.gui.ios.control_guide import ControlGuideCard
 from src.gui.ios.components import (
     IOSSearchEmpty,
     IOSSearchField,
@@ -25,6 +24,7 @@ from src.gui.ios.components import (
     NumberInputDialog,
     TextInputDialog,
 )
+from src.gui.ios.control_guide import ControlGuideCard
 from src.gui.ios.tweak_categories import (
     BOTTOM_TWEAK_CATEGORIES,
     SPRINGBOARD_GROUPS,

@@ -9,14 +9,26 @@ from unittest.mock import Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QEvent, Qt
-from PySide6.QtGui import QKeyEvent
-from PySide6.QtWidgets import QApplication, QBoxLayout, QDialog, QLineEdit, QWidget
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QColor, QIcon, QKeyEvent
+from PySide6.QtWidgets import (
+    QApplication,
+    QBoxLayout,
+    QDialog,
+    QLineEdit,
+    QWidget,
+)
 
 from src.gui.ios.apply import IOSApplyPage
 from src.gui.ios.tweaks import IOSSectionContent
+from src.gui.liquid.dock import (
+    SETTINGS_ICON_PX,
+    SETTINGS_MIN_EXTENT,
+    LiquidDock,
+)
 from src.gui.liquid.navigation import LiquidNavBar
 from src.gui.main_window_mixins import NavigationMixin
+from src.gui.theme import ColorThemeManager
 from src.gui.window_chrome import CONTROLS_RIGHT, FLAT_BUTTON_H, FLAT_EDGE_INSET
 
 
@@ -24,6 +36,45 @@ class NavigationWindow(QWidget, NavigationMixin):
     def __init__(self):
         super().__init__()
         self._go_back = Mock(return_value=True)
+
+
+class _DockSettings:
+    """The dock only needs a value store; never touch the machine's prefs."""
+
+    def __init__(self):
+        self.values = {}
+
+    def value(self, key, default=None, type=None):
+        return self.values.get(key, default)
+
+    def setValue(self, key, value):
+        self.values[key] = value
+
+
+class _DockPages(QObject):
+    currentChanged = Signal(int)
+
+    def currentIndex(self):
+        return 0
+
+
+class DockWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.resize(1280, 800)
+        self.settings = _DockSettings()
+        self.ios_pages = _DockPages()
+        self.apply_in_progress = False
+
+
+def _pixmap_has_color(pixmap, color):
+    image = pixmap.toImage()
+    target = QColor(color)
+    return any(
+        image.pixelColor(x, y) == target
+        for x in range(image.width())
+        for y in range(image.height())
+    )
 
 
 class UILayoutTests(unittest.TestCase):
@@ -100,6 +151,36 @@ class UILayoutTests(unittest.TestCase):
         window.remove_tweaks_clicked.assert_not_called()
         page.preview_btn.click()
         window.show_device_twin.assert_called_once()
+
+    def test_settings_shortcut_is_larger_and_accent_tinted(self):
+        window = DockWindow()
+        self.addCleanup(window.deleteLater)
+        dock = LiquidDock(window, window)
+        self.addCleanup(dock.deleteLater)
+        dock._motion.stop()
+        dock._amount = 1.0
+        dock._expanded = True
+        dock.position()
+
+        settings = dock.settings_button
+        self.assertEqual(settings.iconSize().width(), SETTINGS_ICON_PX)
+        self.assertGreater(settings.iconSize().width(),
+                           dock.buttons['tweaks'].iconSize().width())
+        self.assertEqual(settings.geometry().width(), SETTINGS_MIN_EXTENT)
+        self.assertGreater(settings.geometry().width(),
+                           dock.more.geometry().width())
+
+        colors = ColorThemeManager.instance().colors
+        pixmap = settings.icon().pixmap(
+            settings.iconSize(), QIcon.Mode.Normal, QIcon.State.Off
+        )
+        self.assertTrue(_pixmap_has_color(pixmap, colors.text_inverse))
+
+        # "Tinted" means a solid accent pill: no translucent glass behind it.
+        image = settings.grab().toImage()
+        centre = image.pixelColor(settings.width() // 2, 4)
+        self.assertEqual(centre.alpha(), 255)
+        self.assertEqual(centre, QColor(colors.accent))
 
 
 if __name__ == "__main__":

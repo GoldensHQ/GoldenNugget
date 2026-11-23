@@ -31,6 +31,7 @@ from src.tweaks.tweaks import tweaks
 from src.utils.i18n import QT_TRANSLATE_NOOP, QCoreApplication
 from src.utils.paths import app_data_dir, brand_dir
 
+from .preset_version import stamp_preset_version
 from .retired_feature_flags import is_retired_feature_flag
 
 PRESETS_DIR_NAME = "Presets"
@@ -184,6 +185,7 @@ class PresetManager:
 
         file_path = self.get_preset_path(name)
         if name == 'AutoSave':
+            stamp_preset_version(data, preserve=True)
             from src.controllers.autosave_store import write_autosave
             try:
                 if _should_commit is not None and not _should_commit():
@@ -247,6 +249,7 @@ class PresetManager:
             # Add export marker
             data["exported"] = True
             data["exported_at"] = int(time.time())
+            stamp_preset_version(data, preserve=True)
 
             if include:
                 data = self._filter_export(data, include)
@@ -337,6 +340,7 @@ class PresetManager:
         data["metadata"]["updated_at"] = now
         if "created_at" not in data["metadata"]:
             data["metadata"]["created_at"] = now
+        stamp_preset_version(data, preserve=True)
 
         temporary = None
         try:

@@ -287,6 +287,18 @@ elif os.name == 'nt':
 
 PyInstaller.__main__.run(args)
 
+# --- Guard: no QtWebEngine in the released bundle -------------------------
+# The full PySide6 wheel installs pyside6-webengine as a meta dependency, and
+# PyInstaller's Qt hooks collect QML plugin trees by directory, not by Python
+# imports. One stray WebEngine plugin silently adds libQt6WebEngineCore.so
+# (~195 MB on Linux) plus Chromium resources to a bundle that has no browser
+# feature. Fail the build instead of shipping it.
+subprocess.run([
+    sys.executable,
+    os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                 "tools", "check_bundle_no_webengine.py"),
+], check=True)
+
 if os.name == 'nt' and python3t_dll:
     bundled_paths = [
         os.path.join("dist", "GoldenNugget", "_internal", "python3t.dll"),

@@ -328,12 +328,29 @@ class ProtectiveBackupCache:
         """
         from src.restore.protective import perform_protective_backup
 
+        # On a first apply the cache root does not exist yet. Creating the
+        # lock file used to fail with ENOENT, which was reported as "another
+        # process is refreshing" and made the very first apply impossible.
+        # Make the root ourselves so a lock failure always means a real lock
+        # or an explicit filesystem error.
+        try:
+            self.base.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise NuggetException(
+                f"Cannot create the backup cache folder at {self.base}: {error}"
+            ) from error
+
         # Two processes refreshing one master (app + restore_cache.py, or two
         # app instances) interleave mobilebackup2 uploads into a torn
         # manifest/payload mix. Serialize the refresh itself; a second caller
         # that cannot get the lock fails loudly instead of corrupting.
         lock = FileLock(str(self.base / f".refresh-{self.udid}.lock"))
         if not await asyncio.to_thread(lock.tryLock, 10_000):
+            if lock.last_error is not None:
+                raise NuggetException(
+                    f"Cannot create the backup-cache refresh lock at "
+                    f"{lock.path}: {lock.last_error}"
+                ) from lock.last_error
             raise NuggetException(
                 "Another GoldenNugget process is refreshing the backup cache "
                 "for this device. Wait for it to finish, then try again.")

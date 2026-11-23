@@ -44,6 +44,11 @@ class FileLock:
     def __init__(self, path: str):
         self.path = str(path)
         self._locked = False
+        # Set when the lock could not even be created (missing/permission-
+        # denied parent, read-only volume). Without it every failure looks
+        # like "another process holds it", which sent users chasing a ghost
+        # process when the real cause was an unwritable folder.
+        self.last_error: OSError | None = None
 
     def _stale(self) -> bool:
         try:
@@ -81,6 +86,14 @@ class FileLock:
         return self._stale()
 
     def tryLock(self, timeout_ms: int = 0) -> bool:  # noqa: N802 - QLockFile API
+        self.last_error = None
+        parent = os.path.dirname(self.path)
+        if parent:
+            try:
+                os.makedirs(parent, exist_ok=True)
+            except OSError as error:
+                self.last_error = error
+                return False
         deadline = time.monotonic() + max(0, timeout_ms) / 1000.0
         while True:
             try:
@@ -97,7 +110,8 @@ class FileLock:
                     return False
                 time.sleep(0.02)
                 continue
-            except OSError:
+            except OSError as error:
+                self.last_error = error
                 return False
             try:
                 os.write(descriptor, f"{os.getpid()}\n".encode("ascii"))

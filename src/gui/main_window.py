@@ -31,7 +31,6 @@ def _still_running(worker) -> bool:
         return False
 
 from src.controllers.preset_manager import PresetManager
-from src.gui.app_shell import ShellUI
 from src.gui.translator import Translator
 
 if TYPE_CHECKING:
@@ -49,7 +48,6 @@ from src.gui.ios.presets import IOSPresetsPage
 from src.gui.ios.settings import IOSSettingsPage
 from src.gui.ios.statusbar import IOSStatusBarPage
 from src.gui.ios.templates import IOSTemplatesPage
-from src.gui.ios.theme_manager import ThemeManager
 from src.gui.ios.tweaks import IOSSectionPage, IOSTweaksPage
 from src.gui.main_window_mixins import (
     ApplyMixin,
@@ -57,44 +55,10 @@ from src.gui.main_window_mixins import (
     NavigationMixin,
     SettingsMixin,
 )
-from src.gui.theme import ColorThemeManager, t, theme_icon, themed_stylesheet
+from src.gui.theme import ColorThemeManager, t
 from src.gui.thread_workers.apply_worker import DeviceMonitorThread
 from src.tweaks.registry import Section
 
-# Classic chrome (device bar + sidebar + home toolbar) uses monochrome white
-# bootstrap SVGs; they must be recolored on every theme change.
-_CLASSIC_THEMED_ICONS = {
-    "phoneIconBtn": ":/icon/phone.svg",
-    "refreshBtn": ":/icon/arrow-clockwise.svg",
-    "homePageBtn": ":/icon/house.svg",
-    "gestaltPageBtn": ":/icon/iphone-island.svg",
-    "euEnablerPageBtn": ":/icon/geo-alt.svg",
-    "statusBarPageBtn": ":/icon/features/status-bar.png",
-    "passcodePageBtn": ":/icon/features/passcode-theme.png",
-    "springboardOptionsPageBtn": ":/icon/app-indicator.svg",
-    "internalOptionsPageBtn": ":/icon/hdd.svg",
-    "liquidGlassPageBtn": ":/icon/liquid-glass.svg",
-    "daemonsPageBtn": ":/icon/features/daemons.png",
-    "iconThemesPageBtn": ":/icon/features/icon-themes.png",
-    "presetsPageBtn": ":/icon/folder.svg",
-    "applyPageBtn": ":/icon/check-circle.svg",
-    "posterboardPageBtn": ":/icon/features/posterboard.png",
-    "templatesPageBtn": ":/icon/file-earmark-text.svg",
-    "settingsPageBtn": ":/icon/gear.svg",
-    "mainDevBtn": ":/icon/github.svg",
-    "discordBtn": ":/icon/discord.svg",
-    "starOnGithubBtn": ":/icon/star.svg",
-    "leminGithubBtn": ":/icon/github.svg",
-    "leminTwitterBtn": ":/icon/twitter.svg",
-    "leminKoFiBtn": ":/icon/currency-dollar.svg",
-}
-
-# Classic home "credits" buttons that hardcode dark borders in the .ui.
-_CLASSIC_BORDERED_BTNS = [
-    "helpFromBtn", "posterRestoreBtn", "snoolieBtn", "disfordottieBtn",
-    "mikasaBtn", "wind0ws11AeroBtn", "translatorsBtn", "libiBtn",
-    "duyBtn", "jjtechBtn", "qtBtn",
-]
 
 class _PageSpinner(QtWidgets.QWidget):
     """Rotating-arc busy indicator for the first-open loading screen."""
@@ -208,16 +172,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self.device_manager = device_manager
         self.translator = translator
         self.settings = self.translator.settings
-        self.ui = ShellUI()
-        from src.gui.widgets import NavigationSidebar
-        self.ui.sidebar.hide()
-        self.ui.sidebar = NavigationSidebar(self.ui, self)
         # Window floor: exactly 1000x600 (min == max). Keep that as the
         # minimum, but let the user grow it: at 600px most pages scroll.
         self.setMaximumSize(16777215, 16777215)  # QWIDGETSIZE_MAX
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
                            QtWidgets.QSizePolicy.Preferred)
-        self.noneText = self.tr("None")
         self.apply_in_progress = False
         self.refresh_in_progress = False
         self._device_change_refresh_pending = False
@@ -244,24 +203,6 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self._register_tweak_autosave()
 
         self.initial_load = True
-
-        # hide every page
-        self.ui.posterboardPageBtn.hide()
-        self.ui.euEnablerPageBtn.hide()
-        self.ui.statusBarPageBtn.hide()
-        self.ui.springboardOptionsPageBtn.hide()
-        self.ui.internalOptionsPageBtn.hide()
-        self.ui.liquidGlassPageBtn.hide()
-        self.ui.daemonsPageBtn.hide()
-        self.ui.iconThemesPageBtn.hide()
-        self.ui.passcodePageBtn.hide()
-        self.ui.applyPageBtn.hide()
-        self.ui.sidebarDiv1.hide()
-        self.ui.sidebarDiv2.hide()
-
-        # theme manager stores the active UI mode (classic sidebar shell vs
-        # full-screen iOS); apply_theme() below applies it
-        self.theme_manager = ThemeManager(self)
 
         # Color theme manager (single dark palette + accent)
         self._color_theme = ColorThemeManager.instance()
@@ -343,6 +284,11 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
                  lambda: self.ios_passthemes.choose_theme_dialog),
         }
         self.ios_pages.currentChanged.connect(self._update_shared_nav)
+        # QStackedWidget starts on index 0 without emitting currentChanged, so
+        # the shared header would keep its default visible state on the
+        # full-screen home page until the first navigation. Sync it now; going
+        # to a page and back later did the same thing and hid the stale header.
+        self._update_shared_nav(self.ios_pages.currentIndex())
 
         ios_root = QtWidgets.QWidget(self)
         # The shared header spans the window's full width, like a title bar:
@@ -382,37 +328,23 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         from src.gui.liquid.dock import LiquidDock as BottomNavigation
         self.bottom_navigation = BottomNavigation(self, ios_root)
 
-        # Unified shell: classic sidebar + [classic home | iOS root | classic daemons].
-        # The sidebar is the only survivor of the old UI chrome; most pages
-        # render through the iOS-style stack. Daemons has been ported to the
-        # same iOS-style interface and lives as its own classic page. The REST
-        # of the classic UI is parked (hidden, alive): wrappers and flows still
-        # reference its widgets.
-        self._classic_parking = QtWidgets.QWidget(self)
-        self._classic_parking.hide()
-        self.ui.centralwidget.setParent(self._classic_parking)
-        self.ui.homePage.setParent(None)
-        self.ui.sidebar.setParent(None)
-        self.ui.daemonsPage.setParent(None)
-        # the top device bar (phone icon + picker) comes back too
-        self.ui.deviceBar.setParent(None)
-        self.content_stack = QtWidgets.QStackedWidget(self)
-        self.content_stack.addWidget(self.ui.homePage)   # 0 = classic home
-        self.content_stack.addWidget(ios_root)           # 1 = iOS pages
-        self.content_stack.addWidget(self.ui.daemonsPage)  # 2 = classic daemons
-        # 3 = no-device placeholder (shown while no iPhone is connected)
+        # One stack holds the iOS shell and the no-device placeholder; the
+        # placeholder covers the whole surface until a supported device shows
+        # up (or the user chooses to browse without one).
         self.connect_placeholder = ConnectDevicePlaceholder(self)
-        self.content_stack.addWidget(self.connect_placeholder)
+        self.content_stack = QtWidgets.QStackedWidget(self)
+        self.content_stack.addWidget(ios_root)                # 0 = iOS pages
+        self.content_stack.addWidget(self.connect_placeholder)  # 1 = no device
         shell = QtWidgets.QWidget(self)
         shell.setProperty("cls", "central")  # picks up the global #1e1e1e background
         self.shell_layout = QtWidgets.QVBoxLayout(shell)
         self.shell_layout.setContentsMargins(0, 0, 0, 0)
         self.shell_layout.setSpacing(0)
-        self.shell_layout.addWidget(self.ui.deviceBar)
+        # LiquidExperience sets margins on this layout to reserve room for the
+        # floating dock; with the sidebar gone it simply wraps the content.
         self.body_row = QtWidgets.QHBoxLayout()
         self.body_row.setContentsMargins(0, 0, 0, 0)
         self.body_row.setSpacing(0)
-        self.body_row.addWidget(self.ui.sidebar)
         self.body_row.addWidget(self.content_stack, 1)
         self.shell_layout.addLayout(self.body_row)
         self.setCentralWidget(shell)
@@ -421,20 +353,13 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # the traffic-light buttons, drag surfaces and edges live here.
         from src.gui.window_chrome import install_window_chrome
         self.window_chrome = install_window_chrome(
-            self, self.ios_nav, self.ui.sidebar, pages=(self.ios_home,))
-
-        self.apply_theme(self.theme_manager.current_theme)
+            self, self.ios_nav, pages=(self.ios_home,))
 
         # Back navigation: ESC key and mouse back button go to the home page
         QtWidgets.QApplication.instance().installEventFilter(self)
 
-        # Update the app version/build number label
-        self.updateAppVersionLabel()
-
-        ## DEVICE BAR
-        self.ui.refreshBtn.clicked.connect(self.refresh_devices)
-        self.ui.refreshBtn.setToolTip(QCoreApplication.translate("Nugget", "Refresh connected devices"))
-        self.ui.devicePicker.currentIndexChanged.connect(self.change_selected_device)
+        # Device changes are delivered by the USB monitor and the refresh
+        # worker; the old designer picker/refresh buttons are gone.
         self._device_monitor_thread = DeviceMonitorThread(self)
         self._device_monitor_thread.devices_changed.connect(self._on_device_connection_changed)
         self._device_monitor_thread.usb_devices_changed.connect(self._on_usb_devices_changed)
@@ -446,21 +371,6 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         # "No device connected" screen stayed up for the whole scan (seconds)
         # even when a supported phone was already plugged in.
         self._update_device_gate()
-
-        ## SIDE BAR ACTIONS
-        self.ui.homePageBtn.clicked.connect(self.on_homePageBtn_clicked)
-        self.ui.statusBarPageBtn.clicked.connect(self.on_statusBarPageBtn_clicked)
-        self.ui.springboardOptionsPageBtn.clicked.connect(self.on_springboardOptionsPageBtn_clicked)
-        self.ui.internalOptionsPageBtn.clicked.connect(self.on_internalOptionsPageBtn_clicked)
-        self.ui.liquidGlassPageBtn.clicked.connect(self.on_liquidGlassPageBtn_clicked)
-        self.ui.daemonsPageBtn.clicked.connect(self.on_daemonsPageBtn_clicked)
-        self.ui.iconThemesPageBtn.clicked.connect(self.on_iconThemesPageBtn_clicked)
-        self.ui.posterboardPageBtn.clicked.connect(self.on_posterboardPageBtn_clicked)
-        self.ui.templatesPageBtn.clicked.connect(self.on_templatesPageBtn_clicked)
-        self.ui.applyPageBtn.clicked.connect(self.on_applyPageBtn_clicked)
-        self.ui.settingsPageBtn.clicked.connect(self.on_settingsPageBtn_clicked)
-
-        self.ui.presetsPageBtn.clicked.connect(self.on_presetsPageBtn_clicked)
 
         # The initial themed global stylesheet is applied earlier (before the
         # pages are built) so the tree is polished once, not twice.
@@ -652,8 +562,8 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         unmapped parent, which on several platforms renders them transparent
         and stuttering. Called from main_app right after widget.show().
         """
-        # The first-launch interface picker ("Sidebar / Modern") is gone with
-        # the sidebar mode; drop a stale marker so nothing re-asks for it.
+        # The first-launch interface picker is gone; consume the stale marker
+        # so an older install is never asked again.
         if not self.settings.value("ui/interface_choice_done", False, type=bool):
             self.settings.setValue("ui/interface_choice_done", True)
             self._sync_settings()
@@ -694,41 +604,10 @@ class MainWindow(QtWidgets.QMainWindow, DeviceBarMixin, SettingsMixin,
         self._color_theme.apply_to_app()
         # Re-style the ios_pages stack
         self.ios_pages.setStyleSheet(t("page_bg"))
-        if self.theme_manager.current_theme == ThemeManager.CLASSIC:
-            self._retheme_classic()
-
-    def _retheme_classic(self):
-        """Re-color the classic shell: chrome icons, device picker, version
-        link and the hardcoded-dark credit buttons."""
-        c = self._color_theme.colors
-
-        # Recolor white SVG chrome icons to the current text color
-        for obj_name, res in _CLASSIC_THEMED_ICONS.items():
-            widget = getattr(self.ui, obj_name, None)
-            if widget is not None:
-                widget.setIcon(theme_icon(res, c.text_primary))
-
-        # Device picker keeps its default stylesheet (classic look).
-
-        # Version link inherits white from the shell defaults — restyle to text_secondary
-        self.ui.phoneNameLbl.setStyleSheet(f"color: {c.text_primary}; background-color: transparent;")
-        self.ui.phoneVersionLbl.setText(
-            f'<a style="text-decoration:none; color:{c.text_secondary}" href="#">Version</a>')
-
-        self.ui.sidebar._retheme()
-
-        # Credit buttons hardcode #3b3b3b borders in the generated .ui
-        bordered_style = themed_stylesheet("classic_bordered_btn")
-        for obj_name in _CLASSIC_BORDERED_BTNS:
-            widget = getattr(self.ui, obj_name, None)
-            if widget is not None:
-                widget.setStyleSheet(bordered_style)
 
     def _on_color_theme_changed(self):
         """Called when the color theme (accent) changes."""
         self._apply_global_stylesheet()
-        if self.theme_manager.current_theme == ThemeManager.CLASSIC:
-            return
         page = self.ios_pages.currentWidget()
         if page is not None and hasattr(page, "_retheme"):
             page._retheme()

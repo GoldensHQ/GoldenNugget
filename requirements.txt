@@ -1,7 +1,16 @@
 pymobiledevice3==10.7.1
 certifi
-PySide6-Essentials==6.12.0; sys_platform == 'win32'
-PySide6==6.12.0; sys_platform != 'win32'
+# Essentials only on Windows and Linux: every Qt module the app imports
+# (Core, Gui, Widgets, Network, Test) lives there. The full PySide6
+# meta-package additionally installs Addons, WebEngine and PDF, which bloat
+# the build environment and can leak their QML plugins (and WebEngine's
+# 195 MB libQt6WebEngineCore.so) into the frozen bundle.
+# macOS keeps the `PySide6` name because its CI installs a source-built
+# monolithic wheel with that distribution name; that wheel contains no
+# WebEngine, and tools/check_bundle_no_webengine.py fails the build if one
+# ever shows up.
+PySide6-Essentials==6.12.0; sys_platform != 'darwin'
+PySide6==6.12.0; sys_platform == 'darwin'
 PyInstaller==6.22.1
 ffmpeg-python==0.2.0
 opencv-python==4.14.0.94

@@ -36,7 +36,7 @@ def _tr(text: str) -> str:
 
 def _app_version() -> str:
     try:
-        from src.version import App_Version, App_Build
+        from src.version import App_Build, App_Version
         v = str(App_Version)
         b = int(App_Build)
         return f"{v} (build {b})" if b > 0 else v

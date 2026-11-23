@@ -686,6 +686,11 @@ Local transfer/inspection modules:
   and icon assets; `PresetManager` retains the legacy JSON path. Import stores
   selections without activation. `gui/dialogs/file_task.py` runs transfers off
   the GUI thread.
+- `preset_version.py`: stamps saved presets with a top-level `GNUGGET_VERSION`
+  from `src.version.App_Version` (the GoldenNugget build that wrote the file,
+  distinct from `metadata.version`, the preset format version). Export and
+  import preserve an existing stamp so a preset keeps its creator version;
+  legacy files without one are stamped with the current build.
 - `archive_safety.py`: shared ZIP path, link, duplication and expansion checks.
 - `wallpaper_validation.py`: bounded offline package report; exposed through
   `gui/dialogs/wallpaper_validation.py` and `cli/cmd_wallpaper.py`.

@@ -177,6 +177,20 @@ class IOSSettingsPage(QWidget):
         mobile_helper_btn.clicked.connect(self._on_mobile_helper_clicked)
         self.content_layout.addWidget(mobile_helper_btn)
 
+        # Supervision belongs with the device options, even though it only
+        # takes effect when Skip Setup is enabled below.
+        self.supervision_switch = self._make_switch(
+            QCoreApplication.translate("Nugget", "Enable Supervision * (requires Skip Setup)"),
+            pref.supervised,
+            self._make_setting_handler("supervised"),
+        )
+
+        self.organization_card = self._make_text_row(
+            QCoreApplication.translate("Nugget", "Enter Organization Name"),
+            pref.organization_name,
+            self._on_org_name_edited,
+        )
+
         standard_layout = self.content_layout
         self.advanced_section = IOSCollapsibleSection(
             QCoreApplication.translate("Nugget", "Advanced"),
@@ -257,18 +271,6 @@ class IOSSettingsPage(QWidget):
             QCoreApplication.translate("Nugget", "Skip Setup * (non-exploit files only)"),
             pref.skip_setup,
             self._make_setting_handler("skip_setup"),
-        )
-
-        self.supervision_switch = self._make_switch(
-            QCoreApplication.translate("Nugget", "Enable Supervision * (requires Skip Setup)"),
-            pref.supervised,
-            self._make_setting_handler("supervised"),
-        )
-
-        self.organization_card = self._make_text_row(
-            QCoreApplication.translate("Nugget", "Enter Organization Name"),
-            pref.organization_name,
-            self._on_org_name_edited,
         )
 
         self.content_layout = standard_layout
@@ -939,6 +941,11 @@ class IOSSettingsPage(QWidget):
             self.window.settings.value("liquid/reduce_motion", False, type=bool),
             self._on_reduce_motion_toggled)
 
+        self._make_switch(
+            QCoreApplication.translate("Nugget", "Simple Glass (Experimental)"),
+            self.window.settings.value("liquid/simple_glass", False, type=bool),
+            self._on_simple_glass_toggled)
+
     def _make_control_row(self, title, control):
         card = LiquidCard()
         row = QHBoxLayout(card)
@@ -977,6 +984,12 @@ class IOSSettingsPage(QWidget):
     def _on_reduce_motion_toggled(self, checked):
         self.window.settings.setValue("liquid/reduce_motion", checked)
         QApplication.instance().setProperty("liquid_reduce_motion", checked)
+
+    def _on_simple_glass_toggled(self, checked):
+        self.window.settings.setValue("liquid/simple_glass", checked)
+        QApplication.instance().setProperty("liquid_simple_glass", checked)
+        from awesomeui.liquid.controls import refresh_card_highlights
+        refresh_card_highlights()
 
     def _make_pb_setup_section(self):
         self.content_layout.addWidget(IOSSectionHeader(

@@ -72,6 +72,18 @@ class LazyPages(unittest.TestCase):
             self.assertNotIn(type(window.ios_pages.widget(index)).__name__,
                              ('IOSSettingsPage', 'IOSHomePage'))
 
+    def test_shared_header_hidden_on_home_at_startup(self):
+        # QStackedWidget starts at index 0 without emitting currentChanged, so
+        # the header used to keep its default visible state on the home page
+        # until the user navigated to a page and back.
+        window = self.build_window()
+        self.assertEqual(window.ios_pages.currentIndex(), 0)
+        self.assertTrue(window.ios_nav.isHidden())
+        window.set_ios_page(4, animate=False)
+        self.assertFalse(window.ios_nav.isHidden())
+        window.set_ios_page(0, animate=False)
+        self.assertTrue(window.ios_nav.isHidden())
+
     def test_navigation_builds_the_page_in_its_reserved_slot(self):
         window = self.build_window()
         window.set_ios_page(4, animate=False)

@@ -18,13 +18,13 @@ from awesomeui.controls import IOSSectionHeader
 from src.controllers.video_handler import set_ignore_frame_limit
 from src.devicemanagement.constants import Version
 from src.devicemanagement.device_capabilities import device_text
+from src.devicemanagement.progress_status import is_waiting_after_reboot
 from src.gui.autosave import AutosaveMixin
 from src.gui.dialogs.reset_dialog import ResetDialog
-from src.gui.ios.theme_manager import ThemeManager
 from src.gui.ios.tweaks import _hidden_feature_names
 from src.gui.logger import get_logger
 from src.gui.notifications import notify
-from src.gui.theme import ColorThemeManager, theme_icon
+from src.gui.theme import ColorThemeManager
 from src.gui.thread_workers.apply_worker import (
     ApplyAlertMessage,
     ApplyThread,
@@ -32,7 +32,6 @@ from src.gui.thread_workers.apply_worker import (
     get_sudo_pwd,
     set_sudo_pwd,
 )
-from src.gui.version import App_Build, App_Version
 from src.gui.widgets import IOSCollapsibleSection
 from src.tweaks.tweaks import TweakID, tweaks
 from src.utils.alerts import AlertIcon
@@ -64,7 +63,6 @@ if TYPE_CHECKING:
         runtime); declared ``Any`` so the checker resolves every ``self.*``
         handshake between the mixins without dragging Qt types in.
         """
-        ui: Any
         device_manager: Any
         translator: Any
         settings: Any
@@ -76,15 +74,11 @@ if TYPE_CHECKING:
         ios_tweaks: Any
         ios_daemons: Any
         ios_settings: Any
-        theme_manager: Any
         preset_manager: Any
         bottom_navigation: Any
-        body_row: Any
-        shell_layout: Any
         connect_placeholder: Any
         apply_in_progress: Any
         refresh_in_progress: Any
-        noneText: Any
         _color_theme: Any
         _device_refresh_timer: Any
         _ios_page_titles: Any
@@ -95,13 +89,11 @@ if TYPE_CHECKING:
         _expect_device_reboot: Any
         _update_shared_nav: Any
         _refresh_preset_widgets: Any
-        _sync_sidebar_selection: Any
         _schedule_device_event_refresh: Any
         _defer_until_posterboard_ready: Any
         built_page: Any
         page_at: Any
         show_ios_page: Any
-        show_home: Any
         toggle_thread_btns: Any
         tr: Any
         sender: Any
@@ -140,7 +132,7 @@ class DeviceBarMixin(_WindowBase):
     def continue_without_device(self):
         """Allow browsing for this session, without creating a mock device."""
         self._browse_without_device = True
-        self.content_stack.setCurrentIndex(1)
+        self.content_stack.setCurrentIndex(0)
         self.set_ios_page(0, animate=False)
         self._update_shared_nav(0)
         self._refresh_preset_widgets()
@@ -149,7 +141,7 @@ class DeviceBarMixin(_WindowBase):
     def _update_device_gate(self):
         """Show the connect-device placeholder while no iPhone is available.
 
-        The placeholder lives on its own in ``content_stack`` (index 3), so it
+        The placeholder lives on its own in ``content_stack`` (index 1), so it
         replaces the whole iOS shell — no nav bar, no feature cards — until a
         supported device shows up. It auto-dismisses back to the iOS home.
 
@@ -217,18 +209,6 @@ class DeviceBarMixin(_WindowBase):
         if hidden:
             print(f"[HotLoad] Hiding feature pages: {', '.join(sorted(hidden))}")
         statusbar_hidden = "Status Bar" in hidden
-        # Sidebar (classic shell) buttons
-        btn_map = {
-            "Liquid Glass": self.ui.liquidGlassPageBtn,
-            "Springboard": self.ui.springboardOptionsPageBtn,
-            "Internal": self.ui.internalOptionsPageBtn,
-            "PosterBoard": self.ui.posterboardPageBtn,
-            "Templates": self.ui.templatesPageBtn,
-            "Daemons": self.ui.daemonsPageBtn,
-        }
-        for feat, btn in btn_map.items():
-            btn.setVisible(feat not in hidden)
-        self.ui.statusBarPageBtn.setVisible(not statusbar_hidden)
         # iOS home cards
         card_map = {
             "PosterBoard": self.ios_home.posterboard_card,
@@ -243,8 +223,6 @@ class DeviceBarMixin(_WindowBase):
         self.ios_home.update_passcode_support()
         from src.devicemanagement.passcode_support import current_passcode_theme_reason
         reason = current_passcode_theme_reason(self.device_manager)
-        self.ui.passcodePageBtn.setEnabled(not reason)
-        self.ui.passcodePageBtn.setToolTip(reason or "")
         if reason and self.ios_pages.currentIndex() == 11:
             self.show_ios_page(0)
 
@@ -332,7 +310,6 @@ class DeviceBarMixin(_WindowBase):
             self._connection_action = None
             self.connect_placeholder.set_scan_status(
                 QCoreApplication.translate("Nugget", "Checking connected devices…"), busy=True)
-            self.ui.refreshBtn.setDisabled(True)
             self.refresh_worker_thread = RefreshDevicesThread(manager=self.device_manager, settings=self.settings)
             self.refresh_worker_thread.alert.connect(self._connection_alert)
             self.refresh_worker_thread.finished.connect(self.refresh_devices_finished)
@@ -404,7 +381,8 @@ class DeviceBarMixin(_WindowBase):
         import logging
 
         from src.exceptions.device_errors import is_connection_error
-        if self._device_reconnect_expected() and is_connection_error(alert.exc_value):
+        error = getattr(alert, "exc_value", None)
+        if self._device_reconnect_expected() and error is not None and is_connection_error(error):
             logging.getLogger('GoldenNugget.refresh').debug(
                 'Device is reconnecting after reboot: %s', alert.exc_value)
             self._device_change_refresh_pending = True
@@ -418,7 +396,6 @@ class DeviceBarMixin(_WindowBase):
             PasswordRequiredError,
             UserDeniedPairingError,
         )
-        error = getattr(alert, "exc_value", None)
         if isinstance(error, PasswordRequiredError):
             self._connection_action = "unlock"
         elif isinstance(error, PairingDialogResponsePendingError):
@@ -500,67 +477,10 @@ class DeviceBarMixin(_WindowBase):
         except Exception:
             pass
         self.toggle_thread_btns(disabled=False)
-        # Rebuild without exposing transient -1/0 index changes to the device
-        # selection handler while the new list is being populated.
-        self.ui.devicePicker.blockSignals(True)
-        self.ui.devicePicker.clear()
+        if not self.device_manager.devices and hasattr(self, "ios_home"):
+            # no device → no status bar card
+            self.ios_home.set_statusbar_visible(False)
 
-        if len(self.device_manager.devices) == 0:
-            self.ui.devicePicker.setEnabled(False)
-            self.ui.devicePicker.addItem(self.noneText)
-
-            # hide all pages
-            self.ui.sidebarDiv1.hide()
-
-            self.ui.gestaltPageBtn.hide()
-            self.ui.statusBarPageBtn.hide()
-            self.ui.springboardOptionsPageBtn.hide()
-            self.ui.internalOptionsPageBtn.hide()
-            self.ui.liquidGlassPageBtn.hide()
-            self.ui.daemonsPageBtn.hide()
-            self.ui.iconThemesPageBtn.hide()
-            self.ui.passcodePageBtn.hide()
-            self.ui.posterboardPageBtn.hide()
-
-            self.ui.sidebarDiv2.hide()
-            self.ui.applyPageBtn.hide()
-            self.ui.jjtechBtn.hide()
-            self.ui.duyBtn.show()
-
-            # mirror in the iOS UI: no device → no status bar card
-            if hasattr(self, "ios_home"):
-                self.ios_home.set_statusbar_visible(False)
-        else:
-            self.ui.devicePicker.setEnabled(True)
-            # populate the ComboBox with device names
-            for device in self.device_manager.devices:
-                if not device.connected_via_usb:
-                    continue
-                icon = theme_icon(":/icon/phone.svg", ColorThemeManager.instance().colors.text_primary)
-                self.ui.devicePicker.addItem(icon, device.name)
-                self.ui.devicePicker.setItemData(
-                    self.ui.devicePicker.count() - 1,
-                    QCoreApplication.translate("Nugget", "Connected over USB"),
-                    QtCore.Qt.ItemDataRole.ToolTipRole,
-                )
-
-            # show all pages
-            self.ui.sidebarDiv1.show()
-            self.ui.statusBarPageBtn.show()
-            self.ui.springboardOptionsPageBtn.show()
-            self.ui.internalOptionsPageBtn.show()
-            self.ui.liquidGlassPageBtn.show()
-            self.ui.daemonsPageBtn.show()
-            self.ui.iconThemesPageBtn.show()
-            self.ui.passcodePageBtn.hide()
-            self.ui.posterboardPageBtn.show()
-
-            self.ui.sidebarDiv2.show()
-            self.ui.applyPageBtn.show()
-
-            # HotLoad-hidden features are carved out of the Sidebar and iOS home
-            self._apply_hidden_feature_gating()
-        
         # Keep the same phone selected when it remains connected; otherwise
         # DeviceManager selects the first newly discovered phone (or none).
         preferred = getattr(self, "_preferred_device_udid", None)
@@ -570,15 +490,12 @@ class DeviceBarMixin(_WindowBase):
         if self.device_manager.devices:
             self.device_manager.set_current_device(selected_index)
             self._preferred_device_udid = self.device_manager.get_current_device_udid()
-        self.ui.devicePicker.setCurrentIndex(selected_index)
-        self.ui.devicePicker.blockSignals(False)
-        if self.device_manager.devices:
             selected_udid = self.device_manager.get_current_device_udid()
             self.change_selected_device(
                 selected_index,
                 warn_for_beta=selected_udid != getattr(self, "_refresh_previous_device_udid", None),
             )
-        # HotLoad-hidden features are carved out of the Sidebar and iOS home
+        # HotLoad-hidden features are carved out of the iOS home and dock
         self._apply_hidden_feature_gating()
         # keep the iOS home in sync
         self.ios_home.refresh_device_combo()
@@ -601,24 +518,7 @@ class DeviceBarMixin(_WindowBase):
     def change_selected_device(self, index, warn_for_beta=True):
         if len(self.device_manager.devices) > 0 and 0 <= index < len(self.device_manager.devices):
             self.device_manager.set_current_device(index=index)
-            # hide sidebar buttons that are for newer versions
-            MinTweakVersions = {
-                "no_patch": [self.ui.gestaltPageBtn],
-                "26.0": [self.ui.liquidGlassPageBtn],
-            }
-
             device_ver = Version(self.device_manager.data_singleton.current_device.version)
-            # toggle option visibility for the minimum versions
-            for version, views in MinTweakVersions.items():
-                if version == "no_patch":
-                    # these items only apply to unpatched devices, which do not exist on this fork
-                    for view in views:
-                        view.hide()
-                else:
-                    # show views if the version is higher
-                    parsed_ver = Version(version)
-                    for view in views:
-                        view.setVisible(device_ver >= parsed_ver)
             # The Status Bar page is no longer force-hidden on iOS 27 -- the
             # carrier name is delivered through StatusBarOverrides.archive.
             # Visibility is owned by _apply_hidden_feature_gating() (HotLoad
@@ -632,14 +532,12 @@ class DeviceBarMixin(_WindowBase):
                     self.ios_tweaks.set_force_solarium_fallback_visible(True)
             self._apply_hidden_feature_gating()
 
-            # force video looping on iPads (loop gated off the classic widgets)
+            # force video looping on iPads
             is_iphone = self.device_manager.get_current_device_model().startswith("iPhone")
             if not is_iphone:
                 # force looping
                 tweaks[TweakID.PosterBoard].loop_video = True
 
-            # sparse-restore book credits do not apply to this fork
-            self.ui.jjtechBtn.hide()
             # swap out the current posterboard file
             self._load_selected_posterboard(self.device_manager.get_current_device_udid())
 
@@ -650,7 +548,6 @@ class DeviceBarMixin(_WindowBase):
                     self.show_ios_page(2)
                 elif len(tweaks[TweakID.Templates].templates) > 0:
                     self.show_ios_page(14)
-                self._sync_sidebar_selection()
         else:
             self.device_manager.set_current_device(index=None)
 
@@ -805,56 +702,6 @@ class SettingsMixin(AutosaveMixin, _WindowBase):
 
 
 
-    def apply_theme(self, theme: int):
-        """Apply the UI mode WITHOUT navigating away.
-
-        CLASSIC: sidebar + classic home; iOS-style pages open as actions.
-        IOS: iOS UI with the shared header providing back navigation and the
-        floating dock. Only the chrome changes — the current page stays put.
-        """
-        self.theme_manager.save_theme(theme)
-        is_ios = theme == ThemeManager.IOS
-        self.ui.sidebar.setVisible(not is_ios)
-        self.bottom_navigation.setVisible(is_ios)
-        self.bottom_navigation.popup.hide()
-        self.ios_home.cards_grid.setVisible(True)
-        self.ios_home.apply_btn.setVisible(True)
-        self.ui.deviceBar.setVisible(not is_ios)
-        if is_ios:
-            # iOS mode: full-screen, no padding
-            self.shell_layout.setContentsMargins(0, 0, 0, 0)
-            self.shell_layout.setSpacing(0)
-            self.body_row.setSpacing(0)
-            # entering the new UI: land on its home unless already inside it.
-            # A UI-mode switch re-lays out the whole shell, so no page slide.
-            if self.content_stack.currentIndex() != 1:
-                self.content_stack.setCurrentIndex(1)
-                self.set_ios_page(0, animate=False)
-            self._update_shared_nav(self.ios_pages.currentIndex())
-        else:
-            # Classic mode: add padding around the shell
-            self.shell_layout.setContentsMargins(16, 16, 16, 16)
-            self.shell_layout.setSpacing(12)
-            self.body_row.setSpacing(16)
-            # classic UI hides the shared header except on pages that need it
-            # (Icon Themes keeps "+ Add Icon")
-            self._update_shared_nav(self.ios_pages.currentIndex())
-            if self.ios_pages.currentIndex() == 0:
-                # the iOS home has no meaning inside the classic shell
-                self.show_home()
-        self._sync_sidebar_selection()
-
-
-    def updateAppVersionLabel(self):
-        new_text: str = self.ui.appVersionLbl.text()
-        new_text = new_text.replace("%VERSION", App_Version)
-        if App_Build > 0:
-            new_text = new_text.replace("%BETATAG", f"(beta {App_Build})")
-        else:
-            new_text = new_text.replace("%BETATAG", "")
-        self.ui.appVersionLbl.setText(new_text)
-
-
     def _sync_settings(self):
         """Sync settings to disk immediately after critical changes."""
         try:
@@ -865,17 +712,9 @@ class SettingsMixin(AutosaveMixin, _WindowBase):
 
 
 class NavigationMixin(_WindowBase):
-    """Page structure, shared IOS nav bar and sidebar selection."""
-
-    # Icon Themes retains the shared navigation header in the classic shell.
-    _classic_nav_pages = (10,)
+    """Page structure and the shared iOS navigation bar."""
 
     def _update_shared_nav(self, index: int):
-        if self.theme_manager.current_theme == ThemeManager.CLASSIC:
-            use_nav = index in self._classic_nav_pages
-            self.ios_nav.setVisible(use_nav)
-            if not use_nav:
-                return
         # the iOS home page is full-screen — no header at all
         self.ios_nav.setVisible(index != 0)
         if index == 0:
@@ -883,8 +722,7 @@ class NavigationMixin(_WindowBase):
             return
         title = self._ios_page_titles.get(index, "")
         self.ios_nav.set_title(title)
-        self.ios_nav.set_back_visible(
-            self.theme_manager.current_theme != ThemeManager.CLASSIC)
+        self.ios_nav.set_back_visible(True)
         icons = {
             1: "toggles", 2: "wallpaper", 3: "hdd", 4: "gear",
             5: "app-indicator", 6: "check-circle", 7: "phone",
@@ -952,55 +790,6 @@ class NavigationMixin(_WindowBase):
                 QtCore.QTimer.singleShot(0, jump)
                 return
 
-    def _sync_sidebar_selection(self):
-        """Move the checked highlight of the sidebar to the active view."""
-        btns = (self.ui.homePageBtn, self.ui.posterboardPageBtn,
-            self.ui.springboardOptionsPageBtn, self.ui.internalOptionsPageBtn,
-            self.ui.liquidGlassPageBtn, self.ui.daemonsPageBtn,
-            self.ui.applyPageBtn, self.ui.settingsPageBtn,
-            self.ui.statusBarPageBtn, self.ui.iconThemesPageBtn,
-            self.ui.presetsPageBtn, self.ui.templatesPageBtn)
-        page_to_btn = {
-            0: 0,   # home
-            2: 1,   # posterboard
-            7: 2,   # springboard
-            8: 3,   # internal
-            9: 4,   # liquid glass
-            3: 5,   # daemons
-            6: 6,   # apply
-            4: 7,   # settings
-            5: 8,   # status bar
-            10: 9,  # icon themes
-            12: 10, # presets
-            14: 11, # templates
-        }
-        idx = None
-        if self.theme_manager.current_theme == ThemeManager.CLASSIC:
-            if self.content_stack.currentIndex() == 0:
-                idx = 0
-            elif self.content_stack.currentIndex() == 1:
-                idx = page_to_btn.get(self.ios_pages.currentIndex())
-            elif self.content_stack.currentIndex() == 2:
-                idx = 5
-        else:
-            idx = page_to_btn.get(self.ios_pages.currentIndex())
-        target = btns[idx] if idx is not None else None
-        for b in btns:
-            b.setChecked(b is target)
-
-
-    def show_home(self):
-        """Open the home page of the ACTIVE UI mode."""
-        if self.theme_manager.current_theme == ThemeManager.IOS:
-            self.content_stack.setCurrentIndex(1)
-            self.set_ios_page(0)
-            self._update_shared_nav(0)
-        else:
-            self.content_stack.setCurrentIndex(0)
-        self._refresh_preset_widgets()
-        self._sync_sidebar_selection()
-
-
     def _refresh_preset_widgets(self):
         """Keep the active-preset banner on the iOS home page in sync."""
         try:
@@ -1017,7 +806,7 @@ class NavigationMixin(_WindowBase):
             if current_passcode_theme_reason(self.device_manager):
                 self.ios_home.update_passcode_support()
                 return
-        self.content_stack.setCurrentIndex(1)
+        self.content_stack.setCurrentIndex(0)
         self.set_ios_page(index)
 
 
@@ -1119,10 +908,9 @@ class NavigationMixin(_WindowBase):
 
     def open_presets_section(self):
         """Open the dedicated preset manager page."""
-        self.content_stack.setCurrentIndex(1)
+        self.content_stack.setCurrentIndex(0)
         self.set_ios_page(12)
         self._update_shared_nav(12)
-        self._sync_sidebar_selection()
 
 
     def eventFilter(self, obj, event):
@@ -1146,86 +934,12 @@ class NavigationMixin(_WindowBase):
 
 
     def _go_back(self) -> bool:
-        """Navigate back.
-
-        IOS mode: subpage -> iOS home (stay there).
-        CLASSIC mode: any action page backs out to the classic home.
-        """
-        if self.content_stack.currentIndex() == 1:
-            if self.theme_manager.current_theme == ThemeManager.IOS:
-                if self.ios_pages.currentIndex() != 0:
-                    self.set_ios_page(0)
-                    return True
-                return False
-            # classic shell: action pages back out straight to classic home
-            self.content_stack.setCurrentIndex(0)
-            self._sync_sidebar_selection()
-            return True
-        if self.content_stack.currentIndex() == 2:
-            # classic daemons page -> classic home
-            self.content_stack.setCurrentIndex(0)
-            self._sync_sidebar_selection()
+        """Subpage -> iOS home (staying there is not a back action)."""
+        if (self.content_stack.currentIndex() == 0
+                and self.ios_pages.currentIndex() != 0):
+            self.set_ios_page(0)
             return True
         return False
-
-
-    def on_homePageBtn_clicked(self):
-        self.show_home()
-
-
-    def on_statusBarPageBtn_clicked(self):
-        self.show_ios_page(5)
-        self._sync_sidebar_selection()
-
-
-    def on_springboardOptionsPageBtn_clicked(self):
-        self.show_ios_page(7)
-        self._sync_sidebar_selection()
-
-
-    def on_internalOptionsPageBtn_clicked(self):
-        self.show_ios_page(8)
-        self._sync_sidebar_selection()
-
-
-    def on_liquidGlassPageBtn_clicked(self):
-        self.show_ios_page(9)
-        self._sync_sidebar_selection()
-
-
-    def on_daemonsPageBtn_clicked(self):
-        self.ios_daemons.refresh_from_tweaks()
-        self.show_ios_page(3)
-        self._sync_sidebar_selection()
-
-
-    def on_iconThemesPageBtn_clicked(self):
-        self.show_ios_page(10)
-        self._sync_sidebar_selection()
-
-
-    def on_posterboardPageBtn_clicked(self):
-        self.show_ios_page(2)
-        self._sync_sidebar_selection()
-
-    def on_templatesPageBtn_clicked(self):
-        self.show_ios_page(14)
-        self._sync_sidebar_selection()
-
-
-    def on_applyPageBtn_clicked(self):
-        self.show_ios_page(6)
-        self._sync_sidebar_selection()
-
-
-    def on_settingsPageBtn_clicked(self):
-        self.show_ios_page(4)
-        self._sync_sidebar_selection()
-
-
-    def on_presetsPageBtn_clicked(self):
-        self.show_ios_page(12)
-        self._sync_sidebar_selection()
 
 
 class ApplyMixin(_WindowBase):
@@ -1239,11 +953,11 @@ class ApplyMixin(_WindowBase):
         # Mirror progress into the iOS surfaces (home indicator + Apply page)
         try:
             if txt:
-                if not getattr(self, '_attention_notified', False) and (
-                        'Waiting for device after reboot' in txt
-                        or 'enter its passcode' in txt):
-                    # The device rebooted mid-apply and now waits for the user
-                    # (security recovery / lock screen) — surface it once.
+                if (not getattr(self, '_attention_notified', False)
+                        and is_waiting_after_reboot(txt)):
+                    # Only the post-reboot reconnect wait means the user must act.
+                    # Passcode prompts during the pre-reboot backup do not —
+                    # notifying there made the alert arrive long before reboot.
                     self._attention_notified = True
                     notify(QCoreApplication.translate("Nugget", "Need your attention"),
                            QCoreApplication.translate(
@@ -2015,4 +1729,4 @@ class ApplyMixin(_WindowBase):
         if disabled or not self.apply_in_progress:
             self.ios_apply.set_busy(disabled)
         if disabled or not self.refresh_in_progress:
-            self.ui.refreshBtn.setDisabled(disabled)
+            return

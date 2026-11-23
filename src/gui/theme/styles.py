@@ -531,45 +531,6 @@ STYLES = {
     "edit_hint": "color: {accent}; font-size: 17px; background-color: transparent;",
     "value_label": "color: {text_secondary}; font-size: 14px; background-color: transparent;",
 
-    # ---- Preset popup (home screen, opened from the preset banner) ------
-    "preset_popup": """
-        QFrame#presetPopup {{
-            background-color: {bg_elevated};
-            border: 1px solid {card_border};
-            border-radius: 14px;
-        }}
-    """,
-
-    # A preset row is a QPushButton holding labels, so the row's own text is
-    # empty; [checked="true"] is how the selection is shown.
-    "preset_row": """
-        QPushButton#presetRow {{
-            background-color: transparent;
-            border: none;
-            border-radius: 10px;
-            text-align: left;
-            padding: 0px;
-        }}
-        QPushButton#presetRow:hover {{ background-color: {surface_hover}; }}
-        QPushButton#presetRow:checked {{
-            background-color: {surface_hover};
-            border: 1px solid {accent};
-        }}
-    """,
-
-    "preset_mini_button": """
-        QPushButton#presetMiniButton {{
-            background-color: {surface_hover};
-            color: {text_primary};
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            padding: 0px 10px;
-        }}
-        QPushButton#presetMiniButton:hover {{ background-color: {divider}; }}
-        QPushButton#presetMiniButton:disabled {{ color: {text_disabled}; }}
-    """,
-
     "preset_mini_danger": """
         QPushButton#presetMiniButton {{
             background-color: {error_hover};
@@ -957,33 +918,6 @@ STYLES = {
         QScrollBar::handle {{ background: {border}; border-radius: 3px; min-height: 30px; }}
     """,
 
-    # ---- Interface picker ------------------------------------------------
-    "picker_frame": """
-        QFrame {{
-            background-color: {bg_secondary};
-            border-radius: 12px;
-            border: 2px solid transparent;
-        }}
-        QFrame:hover {{ border-color: {accent}; }}
-    """,
-
-    # ---- Classic chrome (device bar) -------------------------------------
-
-    "classic_bordered_btn": """
-        QToolButton {{
-            background: none;
-            border: 1px solid {divider};
-            color: {text_primary};
-        }}
-        QToolButton:hover {{
-            background-color: {surface_hover};
-        }}
-        QToolButton:pressed {{
-            background-color: {surface_hover};
-            color: {text_primary};
-        }}
-    """,
-
     # ---- Global (main window stylesheet) ---------------------------------
     "global": """
         QWidget {{ color: {text_primary}; background-color: transparent; spacing: 0px; font-family: '{font_family}'; }}
@@ -996,7 +930,6 @@ STYLES = {
         QMenu {{ background-color: {bg_elevated}; color: {text_primary}; border: 1px solid {border}; }}
         QMenu::item:selected {{ background-color: {accent}; color: {text_inverse}; }}
         QToolButton {{ background-color: {scrollbar}; border: none; color: {text_primary}; font-size: 14px; min-height: 35px; icon-size: 16px; padding-left: 10px; padding-right: 10px; border-radius: 8px; }}
-        QToolButton[cls=sidebarBtn] {{ background-color: transparent; icon-size: 24px; }}
         QToolButton:pressed {{ background-color: {scrollbar_pressed}; color: {text_primary}; }}
         QToolButton:checked {{ background-color: {accent}; color: {text_inverse}; }}
         QCheckBox {{ spacing: 8px; font-size: 14px; }}

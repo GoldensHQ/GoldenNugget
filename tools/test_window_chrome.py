@@ -57,7 +57,6 @@ from src.gui.window_chrome import (
     DRAG_STRIP_HEIGHT,
     FLAT_EDGE_INSET,
     RESIZE_MARGIN,
-    TITLE_BAR_HEIGHT,
     _top_level,
     cursor_for_edges,
     install_window_chrome,
@@ -88,17 +87,6 @@ class FakeHeader(QWidget):
 
     def set_trailing_inset(self, px):
         self.trailing_inset = px
-
-
-class FakeSidebar(QWidget):
-    """Stands in for ``NavigationSidebar``."""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.top_inset = None
-
-    def set_top_inset(self, px):
-        self.top_inset = px
 
 
 class FakePage(QWidget):
@@ -154,12 +142,11 @@ def make_window():
     central = QWidget(window)
     window.setCentralWidget(central)
     header = FakeHeader(central)
-    sidebar = FakeSidebar(central)
     page = FakePage(central)
-    chrome = install_window_chrome(window, header, sidebar, pages=(page,))
+    chrome = install_window_chrome(window, header, pages=(page,))
     window.show()
     QApplication.processEvents()
-    return window, chrome, header, sidebar, page
+    return window, chrome, header, page
 
 
 def test_cursor_mapping():
@@ -184,7 +171,7 @@ def test_cursor_mapping():
 
 def test_top_level():
     print("_top_level")
-    window, _chrome, header, _sidebar, _page = make_window()
+    window, _chrome, header, _page = make_window()
     nested = QLabel(header)
     check("walks to the window", _top_level(nested) is window)
     # The pitfall the helper exists for: a page that shadows `window`.
@@ -196,7 +183,7 @@ def test_top_level():
 
 def test_install():
     print("install_window_chrome")
-    window, chrome, header, sidebar, page = make_window()
+    window, chrome, header, page = make_window()
     check(
         "window is frameless",
         bool(window.windowFlags() & Qt.WindowType.FramelessWindowHint),
@@ -223,7 +210,6 @@ def test_install():
         header.trailing_inset == CONTROLS_TRAILING_INSET,
         f"{header.trailing_inset}px",
     )
-    check("sidebar reserves the title bar", sidebar.top_inset == TITLE_BAR_HEIGHT)
     check(
         "full-screen pages reserve the title bar", page.top_inset == CONTENT_TOP_INSET
     )
@@ -553,9 +539,8 @@ def test_resize_math():
 
 def test_drag_targets():
     print("what counts as a title bar")
-    _window, chrome, header, sidebar, page = make_window()
+    _window, chrome, header, page = make_window()
     header.setGeometry(0, 0, 400, 60)
-    sidebar.setGeometry(0, 60, 220, 500)
     label = QLabel("Home", header)
     label.setGeometry(120, 10, 60, 24)
     button = QPushButton("Apply", header)
@@ -573,7 +558,6 @@ def test_drag_targets():
     )
     check("a header label drags", chrome._is_drag_target(label, QPoint(5, 5)))
     check("the header surface drags", chrome._is_drag_target(header, QPoint(10, 40)))
-    check("the sidebar surface drags", chrome._is_drag_target(sidebar, QPoint(10, 200)))
     check("a button keeps its press", not chrome._is_drag_target(button, QPoint(5, 5)))
     check("an input keeps its press", not chrome._is_drag_target(field, QPoint(5, 5)))
     nested = QLabel(button)

@@ -22,7 +22,6 @@ from PySide6.QtWidgets import (
 )
 
 from src.controllers.favorites import TweakFavorites
-from src.gui.ios.control_guide import ControlGuideCard
 from src.gui.ios.components import (
     IOSSearchEmpty,
     IOSSearchField,
@@ -32,6 +31,7 @@ from src.gui.ios.components import (
     LiquidCard,
     LiquidSwitch,
 )
+from src.gui.ios.control_guide import ControlGuideCard
 from src.gui.theme import ColorThemeManager, t, theme_icon, theme_pixmap
 from src.tweaks.daemon_descriptions import DAEMON_DESCRIPTIONS
 from src.tweaks.daemons_tweak import NOTIFICATION_RECOVERY_DAEMONS, Daemon

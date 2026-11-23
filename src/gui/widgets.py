@@ -4,7 +4,7 @@ Keep application settings and theme ownership here; implementations live in awes
 """
 from PySide6.QtCore import QTimer
 
-from awesomeui import Sidebar, SidebarTheme, configure_theme
+from awesomeui import configure_theme
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
 from src.gui.theme.theme_manager import connect_visible_theme
 
@@ -70,67 +70,6 @@ class IOSNavBar(_NavBar):
         if self._right_btn is not None:
             self._right_btn.hide()
         super()._clear_right()
-
-
-class NavigationSidebar(Sidebar):
-    """awesomeUI navigation with the existing page-controller bindings."""
-
-    ITEM_NAMES = (
-        ("homePageBtn", "Home"), ("posterboardPageBtn", "PosterBoard"),
-        ("templatesPageBtn", "Templates"), ("gestaltPageBtn", "Mobile Gestalt"),
-        ("euEnablerPageBtn", "Eligibility"), ("statusBarPageBtn", "Status Bar"),
-        ("passcodePageBtn", "Passcode"), ("springboardOptionsPageBtn", "Springboard"),
-        ("internalOptionsPageBtn", "Internal"), ("liquidGlassPageBtn", "Liquid Glass"),
-        ("daemonsPageBtn", "Daemons"), ("iconThemesPageBtn", "Icon Themes"),
-        ("presetsPageBtn", "Presets"), ("applyPageBtn", "Apply"),
-        ("settingsPageBtn", "Settings"),
-    )
-
-    def __init__(self, ui, parent=None):
-        super().__init__(parent, collapsible=False)
-        # Sidebar mode puts this column at the window's top left, where the
-        # app-drawn window buttons live; set_top_inset grows this base margin.
-        self._base_top_padding = self.layout().contentsMargins().top()
-        from PySide6.QtCore import QCoreApplication
-        from PySide6.QtGui import QIcon
-        for name, label in self.ITEM_NAMES:
-            if name == "posterboardPageBtn":
-                ui.sidebarDiv1 = self.add_separator()
-            if name == "applyPageBtn":
-                ui.sidebarDiv2 = self.add_separator()
-            # the Designer page buttons used to carry text/icon/state; the
-            # sidebar owns its labels now and re-creates the handler names.
-            text = QCoreApplication.translate("Nugget", label)
-            icon = (QIcon(":/icon/file-earmark-text.svg")
-                    if name == "templatesPageBtn" else QIcon(":/icon/folder.svg"))
-            item = self.add_item(name, text, icon)
-            setattr(ui, name, item)
-        self._retheme()
-        _auto_retheme(self)
-
-    def _retheme(self):
-        colors = ColorThemeManager.instance().colors
-        self.set_theme(SidebarTheme(
-            background=colors.bg_secondary, border=colors.border,
-            text=colors.text_primary, text_muted=colors.text_secondary,
-            hover_background=colors.surface_hover,
-            active_background=colors.bg_tertiary, active_indicator=colors.accent,
-            separator=colors.divider, width=232, item_height=38,
-        ))
-
-    def set_top_inset(self, px):
-        """Leave room above the first item for the window's own buttons.
-
-        Only sidebar mode needs it: the shared header (which the buttons sit
-        on otherwise) is hidden, so this column starts at the window's corner.
-        """
-        root = self.layout()
-        if root is None:
-            return
-        margins = root.contentsMargins()
-        root.setContentsMargins(margins.left(),
-                                self._base_top_padding + max(0, int(px)),
-                                margins.right(), margins.bottom())
 
 
 from src.gui.liquid.controls import LiquidActionButton as IOSPrimaryButton

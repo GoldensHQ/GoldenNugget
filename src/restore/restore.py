@@ -26,7 +26,10 @@ from pymobiledevice3.services.installation_proxy import InstallationProxyService
 from pymobiledevice3.services.lockdown_service import LockdownService
 from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service
 
-from src.devicemanagement.progress_status import OperationStatus
+from src.devicemanagement.progress_status import (
+    REBOOT_WAIT_MESSAGE,
+    OperationStatus,
+)
 from src.exceptions.device_errors import (
     is_connection_error,
     is_device_lock_required_error,
@@ -235,7 +238,7 @@ async def _wait_for_device(udid: str, progress_callback,
                     "authentication"))
             else:
                 progress_callback(
-                    f"Waiting for device after reboot "
+                    f"{REBOOT_WAIT_MESSAGE} "
                     f"({elapsed // 60}:{elapsed % 60:02d} elapsed)...")
             try:
                 ld = await create_using_usbmux(serial=udid, autopair=False)
