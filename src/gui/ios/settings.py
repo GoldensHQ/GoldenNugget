@@ -69,6 +69,46 @@ def _searchable_text(widget) -> str:
     return ' '.join(parts)
 
 
+def _fade_in_row(widget, owner, animations: list, delay: int) -> None:
+    """Fade a freshly inserted list row in after ``delay`` milliseconds.
+
+    The effect belongs to the row and dies with it (``QListWidget.clear()`` on
+    a history refresh), while the animation is parented to the long-lived page
+    and may outlive its target. Starting such a targetless animation is a Qt
+    warning, so the deferred start verifies the target is still there.
+    """
+    effect = QGraphicsOpacityEffect(widget)
+    widget.setGraphicsEffect(effect)
+    effect.setOpacity(0.0)
+    animation = QPropertyAnimation(effect, b"opacity", owner)
+    animation.setStartValue(0.0)
+    animation.setEndValue(1.0)
+    animation.setDuration(220)
+    animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+    animations.append(animation)
+
+    def start():
+        try:
+            if animation.targetObject() is not None:
+                animation.start()
+        except RuntimeError:
+            # The page itself is gone (shutdown); the timer is just late.
+            pass
+
+    QTimer.singleShot(delay, start)
+
+
+def _cancel_row_fades(animations: list) -> None:
+    """Stop and release the pending row fades before their rows are removed."""
+    for animation in animations:
+        try:
+            animation.stop()
+            animation.deleteLater()
+        except RuntimeError:
+            pass
+    animations.clear()
+
+
 class IOSSettingsPage(QWidget):
     def __init__(self, window, parent=None):
         super().__init__(parent)
@@ -1103,7 +1143,7 @@ class IOSSettingsPage(QWidget):
         from datetime import datetime
 
         from src.controllers.apply_history import load_history
-        self._history_anims.clear()
+        _cancel_row_fades(self._history_anims)
         self.history_list.clear()
         query = self.history_search.text().strip().casefold()
         mode_filter = self.history_mode_filter.currentData()
@@ -1153,16 +1193,7 @@ class IOSSettingsPage(QWidget):
             label.setStyleSheet("background-color: transparent; padding: 5px 2px;")
             self.history_list.setItemWidget(list_item, label)
             list_item.setSizeHint(label.sizeHint())
-            effect = QGraphicsOpacityEffect(label)
-            label.setGraphicsEffect(effect)
-            effect.setOpacity(0.0)
-            animation = QPropertyAnimation(effect, b"opacity", self)
-            animation.setStartValue(0.0)
-            animation.setEndValue(1.0)
-            animation.setDuration(220)
-            animation.setEasingCurve(QEasingCurve.Type.OutCubic)
-            QTimer.singleShot(row_index * 25, animation.start)
-            self._history_anims.append(animation)
+            _fade_in_row(label, self, self._history_anims, row_index * 25)
         if not self.history_list.count():
             self.history_list.addItem(
                 QCoreApplication.translate("Nugget", "No matching operations." if (query or mode_filter != "all" or result_filter != "all") else "No operations recorded yet."))
