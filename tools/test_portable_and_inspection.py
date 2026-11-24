@@ -23,6 +23,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
 
 from src.cli.main import dispatch
+from src.controllers import preset_format as preset_files
 from src.controllers.diagnostics import collect_diagnostics, write_diagnostics
 from src.controllers.preset_bundle import export_bundle, import_bundle
 from src.controllers.preset_manager import PresetManager
@@ -117,7 +118,7 @@ class PortablePresets(Workspace):
         self.assertTrue(first and second)
         self.assertNotEqual(name, other)
         self.assertEqual(set(pm.list_presets()), {name, other})
-        data = json.loads(Path(pm.get_preset_path(name)).read_text())
+        data = preset_files.load(pm.get_preset_path(name))
         self.assertTrue(Path(data['tweaks']['Templates']['templates'][0]).exists())
         with patch('src.controllers.preset_manager.os.replace', side_effect=OSError('disk full')):
             ok, error = pm.import_preset(str(self.destination), 'Failed')

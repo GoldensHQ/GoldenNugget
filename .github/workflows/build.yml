@@ -118,6 +118,15 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --no-deps .macos-qt-wheels/*.whl .macos-cryptography-wheels/*.whl
           python -m pip install -r requirements.txt -c requirements-macos.txt
+          # PyYAML's macOS wheels are per-architecture. The Universal2 app must
+          # not carry an arm64-only _yaml extension, so drop it and let PyYAML
+          # use its pure-Python loader/dumper (presets are small).
+          python - <<'PY'
+          import pathlib
+          import yaml
+          for shared in pathlib.Path(yaml.__file__).parent.glob('_yaml*.so'):
+              shared.unlink()
+          PY
           python tools/prepare_macos_universal.py .macos-qt-wheels
           python -m pip check
           python -m pip freeze > macOS-dependencies.txt

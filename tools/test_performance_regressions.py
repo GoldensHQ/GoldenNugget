@@ -638,7 +638,7 @@ class RenderAndCacheTests(unittest.TestCase):
             path = Path(directory) / 'test.json'
             path.write_text(json.dumps({'metadata': {'version': 1}}))
             self.assertEqual(manager.get_preset_metadata('test')['version'], 1)
-            with patch('src.controllers.preset_manager.json.load', side_effect=AssertionError('repeat parse')):
+            with patch('src.controllers.preset_repository.read_metadata', side_effect=AssertionError('repeat parse')):
                 self.assertEqual(manager.get_preset_metadata('test')['version'], 1)
             path.write_text(json.dumps({'metadata': {'version': 200}}))
             self.assertEqual(manager.get_preset_metadata('test')['version'], 200)

@@ -4,3 +4,5 @@
 cryptography==50.0.0
 # Use the portable universal wheel, without Intel-only optional AES modules.
 pycryptodome==4.0.0
+# PyYAML is installed from requirements.txt; the Universal2 build drops its
+# arch-specific optional _yaml extension and uses the pure-Python fallback.

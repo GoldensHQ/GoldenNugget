@@ -23,6 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src.controllers import preset_format as preset_files
 from src.gui.main_window_mixins import SettingsMixin
 
 PASS = 0
@@ -340,7 +341,7 @@ def test_status_bar_survives_the_round_trip():
     try:
         check("save_preset writes it", pm.save_preset(name, "temp", tags=["test"]))
         import json
-        on_disk = json.load(open(pm.get_preset_path(name), encoding="utf-8"))
+        on_disk = preset_files.load(pm.get_preset_path(name))
         check("the preset file has a StatusBar entry",
               "StatusBar" in on_disk.get("tweaks", {}))
         check("and it carries the override blob",

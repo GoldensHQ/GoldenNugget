@@ -146,7 +146,7 @@ with GoldenNugget's rules, previews it on a virtual iPhone and submits it to the
   - Analytics & diagnostics: crash reporting, Wi-Fi, system, audio, ecosystem, call and media analytics, CoreDuet, Insight, Metrics, symptom, statistical and wireless diagnostics, Duet heuristics, decisiond, triald, sociald
 - Icon Themes: custom Home Screen icons and labels as WebClips, plus downloadable icon packs
 - Passcode Themes: custom passcode keypads from `.passthm` packages, written over USB/Wi-Fi with [AirLift] (no reboot)
-- Presets: save, switch, export and import whole tweak setups (`.gnpreset`); see [Portable presets](docs/PORTABLE_AND_DIAGNOSTICS.md)
+- Presets: save, switch, export and import whole tweak setups (merged `.gnmpreset`, version-3 `.yaml` or legacy `.json`); see [Preset formats](docs/PORTABLE_AND_DIAGNOSTICS.md)
 - Share a preset as a QR code or a one-line code, and import someone else's setup from a screenshot or pasted text
 - Preset catalog: browse community presets reviewed by the team, check their risk, preview and import them, or submit your own
 - Risk check before every apply: a Low / Medium / High verdict with reasons, and an explicit confirmation for high-risk setups
@@ -247,7 +247,7 @@ Want to see your name here? Open a [Pull Request](https://github.com/GoldensHQ/G
 ## Documentation
 
 - [Wiki](https://github.com/GoldensHQ/GoldenNugget/wiki): installation, tweaks, presets, wallpapers and troubleshooting.
-- [Portable presets and diagnostics](docs/PORTABLE_AND_DIAGNOSTICS.md): `.gnpreset` files, diagnostic archives, JSON CLI output and offline wallpaper checks.
+- [Preset formats, portable presets and diagnostics](docs/PORTABLE_AND_DIAGNOSTICS.md): `.gnmpreset`/`.yaml`/`.json` presets, archive assets, diagnostic archives, JSON CLI output and offline wallpaper checks.
 - [Architecture](docs/ARCHITECTURE.md): device connections, background operations and backup/restore internals.
 - [Contributing](CONTRIBUTING.md): contribution guidelines and offline checks.
 

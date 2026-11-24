@@ -1,4 +1,12 @@
-"""Portable .gnpreset files: JSON plus hashed template/icon assets.
+"""Portable preset archives: JSON plus hashed template/icon assets.
+
+``.gnpreset`` keeps the original ``manifest.json`` layout so older GoldenNugget
+builds can still import it. ``.gnmpreset`` (the recommended merged export) is
+a new-build archive: it keeps that v2 manifest and all assets, and adds a
+``preset.gnmpreset`` YAML document holding the v3 header, the complete v3
+preset, the complete v2 JSON preset and the note that v2 holds everything an
+older build needs. Older builds should use the explicit Version 2 export;
+they reject archives with members beyond ``manifest.json`` and ``assets/``.
 
 Wallpapers remain excluded by the preset contract. Import never activates a
 preset; assets are staged in a unique persistent directory owned by that import.
@@ -15,7 +23,12 @@ from pathlib import Path
 
 from src.controllers.archive_safety import MAX_FILE_BYTES, checked_members
 
+from . import preset_format as preset_files
+
 FORMAT = 'GoldenNugget portable preset'
+MERGED_FORMAT = 'GoldenNugget merged preset'
+MANIFEST_NAME = 'manifest.json'
+MERGED_MANIFEST_NAME = 'preset.gnmpreset'
 MANIFEST_LIMIT = 4 * 1024 ** 2
 
 
@@ -31,7 +44,7 @@ def _asset_slots(data):
                     yield theme, 'icon_path'
 
 
-def export_bundle(data, destination):
+def export_bundle(data, destination, *, merged=False):
     data = copy.deepcopy(data)
     data['tweaks'].pop('PosterBoard', None)
     files, assets = {}, {}
@@ -51,17 +64,31 @@ def export_bundle(data, destination):
         files[name] = path
         assets[name] = dict(sha256=digest.hexdigest(), size=size)
         owner[key] = 'bundle://' + name
-    manifest = dict(format=FORMAT, version=1, preset=data, assets=assets)
+
+    # The legacy manifest is always written so the merged archive carries the
+    # same v2 selections and assets as a plain .gnpreset export. Old builds use
+    # the Version 2 JSON export; their strict member check rejects the extra
+    # preset.gnmpreset document.
+    manifest = dict(format=FORMAT, version=1, merged=bool(merged),
+                    preset=preset_files.v2_data(data), assets=assets)
     raw = json.dumps(manifest, ensure_ascii=False, indent=2).encode('utf-8')
     if len(raw) > MANIFEST_LIMIT:
         raise ValueError('Preset metadata is too large.')
+    merged_raw = None
+    if merged:
+        merged_raw = preset_files.dumps(preset_files.FORMAT_MERGED, data).encode('utf-8')
+        if len(merged_raw) > MANIFEST_LIMIT:
+            raise ValueError('Merged preset document is too large.')
+
     destination = Path(destination)
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as stream:
             temporary = stream.name
         with zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr('manifest.json', raw)
+            archive.writestr(MANIFEST_NAME, raw)
+            if merged_raw is not None:
+                archive.writestr(MERGED_MANIFEST_NAME, merged_raw)
             for name, path in files.items():
                 digest, size = hashlib.sha256(), 0
                 with path.open('rb') as src, archive.open(name, 'w') as dst:
@@ -86,16 +113,32 @@ def import_bundle(source, assets_base, validate):
     try:
         with zipfile.ZipFile(source) as archive:
             members = checked_members(archive)
-            if archive.getinfo('manifest.json').file_size > MANIFEST_LIMIT:
+            if archive.getinfo(MANIFEST_NAME).file_size > MANIFEST_LIMIT:
                 raise ValueError('Preset manifest is too large.')
-            manifest = json.loads(archive.read('manifest.json'))
-            if not isinstance(manifest, dict) or manifest.get('format') != FORMAT or manifest.get('version') != 1:
+            manifest = json.loads(archive.read(MANIFEST_NAME))
+            if not isinstance(manifest, dict) or manifest.get('format') != FORMAT \
+                    or manifest.get('version') != 1:
                 raise ValueError('Unsupported portable preset format.')
-            data, assets = manifest.get('preset'), manifest.get('assets')
+            legacy_data, assets = manifest.get('preset'), manifest.get('assets')
+            names = {info.filename for info in members if not info.is_dir()}
+
+            data = legacy_data
+            if MERGED_MANIFEST_NAME in names:
+                if archive.getinfo(MERGED_MANIFEST_NAME).file_size > MANIFEST_LIMIT:
+                    raise ValueError('Merged preset document is too large.')
+                text = archive.read(MERGED_MANIFEST_NAME).decode('utf-8')
+                data = preset_files.parse(text)
+                # The v2 block must carry the same selections as the v3 block,
+                # otherwise an older GoldenNugget would restore a different setup.
+                if preset_files.v2_data(data).get('tweaks') != \
+                        (legacy_data or {}).get('tweaks'):
+                    raise ValueError('Merged preset versions do not match.')
             if not validate(data) or not isinstance(assets, dict):
                 raise ValueError('Invalid portable preset metadata.')
-            names = {info.filename for info in members if not info.is_dir()}
-            if names != {'manifest.json', *assets}:
+            expected = {MANIFEST_NAME, *assets}
+            if MERGED_MANIFEST_NAME in names:
+                expected.add(MERGED_MANIFEST_NAME)
+            if names != expected:
                 raise ValueError('Preset contains missing or unlisted assets.')
             references = list(_asset_slots(data))
             used = set()

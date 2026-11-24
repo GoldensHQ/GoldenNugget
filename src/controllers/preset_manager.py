@@ -7,7 +7,6 @@ __lazy_modules__ = (
 
 import base64
 import copy
-import json
 import os
 import shutil
 import tempfile
@@ -31,11 +30,12 @@ from src.tweaks.tweaks import tweaks
 from src.utils.i18n import QT_TRANSLATE_NOOP, QCoreApplication
 from src.utils.paths import app_data_dir, brand_dir
 
+from . import preset_format as preset_files
 from .preset_version import stamp_preset_version
 from .retired_feature_flags import is_retired_feature_flag
 
 PRESETS_DIR_NAME = "Presets"
-PRESET_VERSION = 2
+PRESET_VERSION = preset_files.CURRENT_VERSION
 
 def _selection_store(manager):
     from src.tweaks.store import selection_store
@@ -76,8 +76,7 @@ class PresetManager:
         if not os.path.isfile(file_path):
             return False
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = preset_files.load(file_path)
         except Exception:
             return False
         daemon_data = data.get("tweaks", {}).get("Daemons")
@@ -99,8 +98,7 @@ class PresetManager:
         if not os.path.isfile(file_path):
             return []
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = preset_files.load(file_path)
         except Exception:
             return []
         hidden = hotload.hidden_features(device_version=device_version,
@@ -213,8 +211,7 @@ class PresetManager:
         if not os.path.isfile(file_path):
             return False
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = preset_files.load(file_path)
         except Exception as e:
             print(f"Failed to read preset: {e}")
             return False
@@ -231,12 +228,15 @@ class PresetManager:
 
     ## EXPORT / IMPORT
     def export_preset(self, name: str, export_path: str,
-                      include: Optional[list] = None, portable: bool = False) -> bool:
-        """Export JSON or a portable .gnpreset with template/icon assets.
+                      include: Optional[list] = None, portable: bool = False,
+                      fmt: Optional[str] = None) -> bool:
+        """Export a preset in the requested format.
 
-        ``include`` optionally limits the export to a subset of tweaks, given
-        as a list of ``TweakID`` members (or their ``.name`` strings). When
-        omitted, the whole preset is exported. ``None``/empty means full.
+        ``fmt`` is one of :data:`preset_format.FORMATS`; when omitted the
+        destination extension decides (``.gnmpreset`` -> merged archive,
+        ``.yaml`` -> raw v3, ``.json`` -> legacy v2, ``.gnpreset`` -> the old
+        portable bundle). ``portable`` keeps the old CLI flag working.
+        ``include`` optionally limits the export to a subset of tweaks.
         """
         self.last_transfer_error = ""
         file_path = self.get_preset_path(name)
@@ -244,9 +244,7 @@ class PresetManager:
             self.last_transfer_error = 'Preset not found.'
             return False
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            # Add export marker
+            data = preset_files.load(file_path)
             data["exported"] = True
             data["exported_at"] = int(time.time())
             stamp_preset_version(data, preserve=True)
@@ -254,13 +252,15 @@ class PresetManager:
             if include:
                 data = self._filter_export(data, include)
 
-            if portable or str(export_path).lower().endswith('.gnpreset'):
+            fmt = fmt or preset_files.format_for_path(export_path)
+            if portable:
+                fmt = preset_files.FORMAT_BUNDLE
+            if fmt in (preset_files.FORMAT_MERGED, preset_files.FORMAT_BUNDLE):
                 from src.controllers.preset_bundle import export_bundle
-                export_bundle(data, export_path)
-                return True
-
-            with open(export_path, "w", encoding="utf-8") as f:
-                json.dump({"metadata": data.get("metadata", {}), **data}, f, ensure_ascii=False, indent=2)
+                export_bundle(data, export_path, merged=fmt == preset_files.FORMAT_MERGED)
+            else:
+                with open(export_path, "w", encoding="utf-8") as f:
+                    f.write(preset_files.dumps(fmt, data))
             return True
         except Exception as e:
             self.last_transfer_error = str(e)
@@ -285,21 +285,20 @@ class PresetManager:
         return out
 
     def import_preset(self, import_path: str, new_name: str = None) -> tuple[bool, str]:
-        """Store JSON or a portable preset without activation; return (ok, name)."""
+        """Store any supported preset format without activation; return (ok, name)."""
         if not os.path.isfile(import_path):
             return False, "File not found"
         owned_assets = None
         committed = False
         try:
             import zipfile
-            if str(import_path).lower().endswith('.gnpreset') or zipfile.is_zipfile(import_path):
+            if zipfile.is_zipfile(import_path):
                 from src.controllers.preset_bundle import import_bundle
                 data, owned_assets = import_bundle(
                     import_path, os.path.join(self.presets_dir, 'assets'),
                     self._valid_import_structure)
             else:
-                with open(import_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                data = preset_files.load(import_path)
             
             # Validate structure
             if not self._valid_import_structure(data):
@@ -340,6 +339,7 @@ class PresetManager:
         data["metadata"]["updated_at"] = now
         if "created_at" not in data["metadata"]:
             data["metadata"]["created_at"] = now
+        data["metadata"]["version"] = PRESET_VERSION
         stamp_preset_version(data, preserve=True)
 
         temporary = None
@@ -347,8 +347,8 @@ class PresetManager:
             with tempfile.NamedTemporaryFile('w', encoding='utf-8', dir=self.presets_dir,
                                              delete=False) as f:
                 temporary = f.name
-                json.dump({"metadata": data.get("metadata", {}), **data}, f, ensure_ascii=False, indent=2)
-            os.replace(temporary, self.get_preset_path(name))
+                f.write(preset_files.dumps(preset_files.FORMAT_V3, data))
+            os.replace(temporary, self.repository.write_path(name))
             temporary = None
         finally:
             if temporary and os.path.exists(temporary):
@@ -358,8 +358,7 @@ class PresetManager:
     ## SHARE CODES
     def read_preset(self, name: str) -> Optional[dict]:
         try:
-            with open(self.get_preset_path(name), "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = preset_files.load(self.get_preset_path(name))
         except (OSError, ValueError):
             return None
         return data if self._valid_import_structure(data) else None

@@ -1,5 +1,9 @@
 pymobiledevice3==10.7.1
 certifi
+# Version-3 presets are YAML. 6.0.4 is the first release with CPython 3.15
+# wheels; older legacy hosts can still build 6.0.3 on Python 3.8/3.9.
+PyYAML==6.0.4; python_version >= '3.10'
+PyYAML==6.0.3; python_version < '3.10'
 # Essentials only on Windows and Linux: every Qt module the app imports
 # (Core, Gui, Widgets, Network, Test) lives there. The full PySide6
 # meta-package additionally installs Addons, WebEngine and PDF, which bloat

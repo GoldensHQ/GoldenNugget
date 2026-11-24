@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src' / 'qt'))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
+from src.controllers import preset_format as preset_files
 from src.controllers.preset_manager import PresetManager
 from src.controllers.tweak_conflicts import current_conflicts, find_conflicts
 from src.tweaks.basic_plist_locations import FileLocation
@@ -130,7 +131,7 @@ class PresetExchange(unittest.TestCase):
             self.assertTrue(ok)
             self.assertNotEqual(name, 'Shared')
             self.assertFalse(selected[TweakID.RTL].enabled)  # importing does not activate it
-            loaded = json.loads(Path(self.pm.get_preset_path(name)).read_text(encoding='utf-8'))
+            loaded = preset_files.load(self.pm.get_preset_path(name))
             self.assertEqual(loaded['tweaks'], expected)
             with patch.object(self.pm, '_load_all_tweaks'), \
                  patch('src.tweaks.hidden.current_hidden_tweak_names', return_value=set()):
@@ -153,7 +154,7 @@ class PresetExchange(unittest.TestCase):
         selected = {TweakID.RTL: enabled(BasicPlistTweak(FileLocation.globalPreferences, 'RTL', True))}
         with patch('src.controllers.preset_manager.tweaks', selected):
             self.assertTrue(self.pm.save_preset('Stamped'))
-        saved = json.loads(Path(self.pm.get_preset_path('Stamped')).read_text(encoding='utf-8'))
+        saved = preset_files.load(self.pm.get_preset_path('Stamped'))
         self.assertEqual(saved['GNUGGET_VERSION'], App_Version)
 
         self.assertTrue(self.pm.save_preset('AutoSave', _data={'tweaks': {'RTL': {'enabled': True}}}))
@@ -171,7 +172,7 @@ class PresetExchange(unittest.TestCase):
         ok, name = self.pm.import_preset(str(self.source))
         self.assertTrue(ok)
         stored = Path(self.pm.get_preset_path(name))
-        self.assertEqual(json.loads(stored.read_text(encoding='utf-8'))['GNUGGET_VERSION'], creator_version)
+        self.assertEqual(preset_files.load(stored)['GNUGGET_VERSION'], creator_version)
 
         exported = Path(self.tmp.name) / 'exported.json'
         self.assertTrue(self.pm.export_preset(name, str(exported)))
@@ -181,8 +182,8 @@ class PresetExchange(unittest.TestCase):
         legacy.write_text(json.dumps({'tweaks': {'RTL': {'enabled': True}}}), encoding='utf-8')
         ok, name = self.pm.import_preset(str(legacy))
         self.assertTrue(ok)
-        self.assertEqual(json.loads(Path(self.pm.get_preset_path(name)).read_text(
-            encoding='utf-8'))['GNUGGET_VERSION'], App_Version)
+        self.assertEqual(preset_files.load(self.pm.get_preset_path(name))['GNUGGET_VERSION'],
+                         App_Version)
 
     def test_malformed_files_are_not_saved(self):
         for value in ([], {}, {'metadata': {}}, {'tweaks': []},

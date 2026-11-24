@@ -4,6 +4,7 @@ import argparse
 import sys
 
 from src.cli.output import set_result
+from src.controllers import preset_format as preset_files
 
 
 def _pm():
@@ -38,7 +39,8 @@ def add_parser(subp):
         help="Save / load / manage tweak presets",
         description="Presets snapshot the current tweak state the same way the "
                     "GUI's Settings → Presets page does. They live in the "
-                    "GoldenNugget app-data folder as JSON files.",
+                    "GoldenNugget app-data folder as version-3 YAML files, "
+                    "with legacy JSON presets still readable.",
     )
     sub = parser.add_subparsers(dest="preset_sub", required=True)
 
@@ -66,14 +68,19 @@ def add_parser(subp):
     p.add_argument("name")
     p.set_defaults(func=_run_delete)
 
-    p = sub.add_parser("export", help="Export a preset to a shareable JSON file")
+    p = sub.add_parser("export", help="Export a preset in YAML, merged or legacy JSON form")
     p.add_argument("name")
-    p.add_argument("--out", default=None, help="output path (default: <name>.json)")
+    p.add_argument("--out", default=None,
+                   help="output path (default: <name>.gnmpreset)")
+    p.add_argument("--format", choices=(*preset_files.FORMATS, preset_files.FORMAT_BUNDLE),
+                   default=preset_files.FORMAT_MERGED,
+                   help="merged (.gnmpreset), v3 (.yaml), v2 (.json) or bundle (.gnpreset)")
     p.add_argument("--include", default="", help="comma-separated TweakID names")
-    p.add_argument('--portable', action='store_true', help='Embed templates and icons in a .gnpreset archive')
+    p.add_argument('--portable', action='store_true',
+                   help='write the legacy .gnpreset bundle instead')
     p.set_defaults(func=_run_export)
 
-    p = sub.add_parser("import", help="Import a preset from a JSON file")
+    p = sub.add_parser("import", help="Import a YAML, merged or legacy JSON preset")
     p.add_argument("path")
     p.add_argument("--name", default=None, help="renamed on import")
     p.set_defaults(func=_run_import)
@@ -168,13 +175,16 @@ def _run_delete(args):
 def _run_export(args):
     pm = _pm()
     portable = getattr(args, 'portable', False)
-    out = args.out or f"{args.name}.{'gnpreset' if portable else 'json'}"
+    fmt = preset_files.FORMAT_BUNDLE if portable else getattr(
+        args, 'format', preset_files.FORMAT_MERGED)
+    out = args.out or f"{args.name}.{preset_files.default_extension(fmt)}"
     include = [s.strip() for s in args.include.split(",") if s.strip()] or None
-    if not pm.export_preset(args.name, out, include=include, portable=portable):
+    if not pm.export_preset(args.name, out, include=include, fmt=fmt):
         print(f"ERROR: failed to export preset '{args.name}': {pm.last_transfer_error}", file=sys.stderr)
         return 1
     print(f"Exported '{args.name}' -> {out}")
-    set_result(dict(name=args.name, path=out, portable=portable or out.lower().endswith('.gnpreset')))
+    set_result(dict(name=args.name, path=out, format=fmt,
+                    portable=fmt == preset_files.FORMAT_BUNDLE))
     return 0
 
 

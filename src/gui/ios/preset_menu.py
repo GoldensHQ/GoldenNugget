@@ -13,6 +13,7 @@ from typing import Optional
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
+from src.controllers import preset_format as preset_files
 from src.controllers.hotload import HotLoad
 from src.controllers.preset_manager import PresetManager
 from src.devicemanagement.device_capabilities import device_os_name
@@ -21,6 +22,33 @@ from src.gui.dialogs.hotload_warning import confirm_flagged
 
 # _ = translate
 _T = QCoreApplication.translate
+
+EXPORT_FILTERS = (
+    (_T("Nugget", "Merged Export (recommended) (*.gnmpreset)"), preset_files.FORMAT_MERGED),
+    (_T("Nugget", "Version 3 (Raw YAML) (*.yaml)"), preset_files.FORMAT_V3),
+    (_T("Nugget", "Version 2 (Deprecated, not recommended) (*.json)"), preset_files.FORMAT_V2),
+)
+
+
+def _export_filter_text() -> str:
+    return ";;".join(label for label, _ in EXPORT_FILTERS)
+
+
+def _export_choice(file_path: str, selected_filter: str) -> tuple[str, str]:
+    """Return the final path and format for a chosen export filter."""
+    fmt = preset_files.format_for_path(file_path)
+    for pattern, candidate in (
+        ("*.gnmpreset", preset_files.FORMAT_MERGED),
+        ("*.yaml", preset_files.FORMAT_V3),
+        ("*.json", preset_files.FORMAT_V2),
+    ):
+        if pattern in (selected_filter or ""):
+            fmt = candidate
+            break
+    extension = preset_files.default_extension(fmt)
+    if not file_path.lower().endswith(extension):
+        file_path = os.path.splitext(file_path)[0] + extension
+    return file_path, fmt
 
 
 def restart_app():
@@ -236,15 +264,15 @@ def export_preset_flow(parent, pm: PresetManager, name: str) -> bool:
             _T("Nugget", "Select a preset to export first."))
         return False
     file_path, selected_filter = QFileDialog.getSaveFileName(
-        parent, _T("Nugget", "Export Preset"), f"{name}.json",
-        _T("Nugget", "JSON Files (*.json);;Portable Preset with Templates and Icons (*.gnpreset)"))
+        parent, _T("Nugget", "Export Preset"),
+        f"{name}{preset_files.default_extension(preset_files.FORMAT_MERGED)}",
+        _export_filter_text())
     if not file_path:
         return False
-    if '*.gnpreset' in selected_filter and not file_path.lower().endswith('.gnpreset'):
-        file_path = os.path.splitext(file_path)[0] + '.gnpreset'
+    file_path, fmt = _export_choice(file_path, selected_filter)
     from src.gui.dialogs.file_task import run_file_task
     if not run_file_task(parent, _T('Nugget', 'Export Preset'),
-                         lambda: pm.export_preset(name, file_path)):
+                         lambda: pm.export_preset(name, file_path, fmt=fmt)):
         QMessageBox.critical(
             parent, _T("Nugget", "Export Preset"),
             _T("Nugget", "Failed to export preset:\n{0}").format(pm.last_transfer_error))
@@ -272,15 +300,15 @@ def partial_export_preset_flow(parent, pm: PresetManager, name: str) -> bool:
             _T("Nugget", "Select at least one tweak to export."))
         return False
     file_path, selected_filter = QFileDialog.getSaveFileName(
-        parent, _T("Nugget", "Partial Export"), f"{name}.json",
-        _T("Nugget", "JSON Files (*.json);;Portable Preset with Templates and Icons (*.gnpreset)"))
+        parent, _T("Nugget", "Partial Export"),
+        f"{name}{preset_files.default_extension(preset_files.FORMAT_MERGED)}",
+        _export_filter_text())
     if not file_path:
         return False
-    if '*.gnpreset' in selected_filter and not file_path.lower().endswith('.gnpreset'):
-        file_path = os.path.splitext(file_path)[0] + '.gnpreset'
+    file_path, fmt = _export_choice(file_path, selected_filter)
     from src.gui.dialogs.file_task import run_file_task
     if not run_file_task(parent, _T('Nugget', 'Partial Export'),
-                         lambda: pm.export_preset(name, file_path, include=selected)):
+                         lambda: pm.export_preset(name, file_path, include=selected, fmt=fmt)):
         QMessageBox.critical(
             parent, _T("Nugget", "Partial Export"),
             _T("Nugget", "Failed to export preset:\n{0}").format(pm.last_transfer_error))
@@ -295,7 +323,7 @@ def import_preset_flow(parent, pm: PresetManager) -> Optional[str]:
     """Import a preset file. Returns the new preset name, or None."""
     file_path, _ = QFileDialog.getOpenFileName(
         parent, _T("Nugget", "Import Preset"), "",
-        _T("Nugget", "Preset Files (*.json *.gnpreset)"))
+        _T("Nugget", "Preset Files (*.gnmpreset *.yaml *.yml *.json *.gnpreset)"))
     if not file_path:
         return None
     from src.gui.dialogs.file_task import run_file_task

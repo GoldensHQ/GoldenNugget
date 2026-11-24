@@ -14,6 +14,8 @@
 # Everything else matches requirements.txt.
 pymobiledevice3==10.7.1
 certifi
+PyYAML==6.0.4; python_version >= '3.10'
+PyYAML==6.0.3; python_version < '3.10'
 PySide6-Essentials==6.9.2
 PyInstaller==6.22.1
 ffmpeg-python==0.2.0

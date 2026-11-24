@@ -639,8 +639,12 @@ without touching presets, backups or the device.
 Settings keeps preset Load/Delete/Refresh separate from the Export/Partial
 Export/Import row. Imports validate their container structure before saving,
 preserve legacy files without metadata, and store the preset without activating
-it. Existing JSON export semantics remain unchanged (PosterBoard is excluded;
-template and icon entries reference local assets rather than bundling them).
+it. Local presets are written as version-3 YAML (`.yaml`); legacy version-2 JSON
+presets stay readable and are normalized on import. The Export dialog offers
+**Merged Export (recommended)** (`.gnmpreset`), **Version 3** (raw `.yaml`) and
+**Version 2 (Deprecated, not recommended)** (`.json`). PosterBoard wallpapers
+remain excluded from presets; template/icon assets are either local paths or,
+in an archive export, bundled with hashed references.
 
 The `Page` enum (`pages_list.py`) and the designer `pages` QStackedWidget
 share 15 indices, but the designer stack is **parked** (`main_window.py:150-152`)
@@ -682,8 +686,20 @@ and is not the live navigator. Real navigation uses:
 ## src/controllers/ — support services
 
 Local transfer/inspection modules:
-- `preset_bundle.py`: atomic portable preset export/import with hashed template
-  and icon assets; `PresetManager` retains the legacy JSON path. Import stores
+- `preset_format.py`: the single codec for preset text. Version 3 is YAML with a
+  leading `HEADER` (`PresetVersion`, `GNVersion`, `Device`, `OSVersion`,
+  `Includes`); version 2 is plain legacy JSON. A merged document carries the
+  header plus both complete presets as literal blocks (`Preset Version 3 (YAML)`
+  and `Preset Version 2 (JSON)`, with the note "Preset version 2 contains all
+  needed."). The loader disables YAML 1.1's `yes`/`on`/timestamp coercion so
+  user text is never silently retyped; JSON files are always parsed as JSON.
+- `preset_repository.py`: finds/reads/writes local presets across the supported
+  extensions (`.yaml`, `.json`, legacy `.gnpreset`), with `AutoSave` pinned to
+  JSON for the autosave store.
+- `preset_bundle.py`: atomic archive export/import with hashed template and icon
+  assets. `.gnpreset` keeps the version-1 JSON manifest for old builds;
+  `.gnmpreset` is the recommended merged export and adds a
+  `preset.gnmpreset` YAML document beside that manifest. Import stores
   selections without activation. `gui/dialogs/file_task.py` runs transfers off
   the GUI thread.
 - `preset_version.py`: stamps saved presets with a top-level `GNUGGET_VERSION`
