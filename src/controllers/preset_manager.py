@@ -234,11 +234,13 @@ class PresetManager:
     ## EXPORT / IMPORT
     def export_preset(self, name: str, export_path: str,
                       include: Optional[list] = None, portable: bool = False) -> bool:
-        """Export JSON or a portable .gnpreset with template/icon assets.
+        """Export JSON, a merged ``.gnmpreset`` or a portable ``.gnpreset``.
 
-        ``include`` optionally limits the export to a subset of tweaks, given
-        as a list of ``TweakID`` members (or their ``.name`` strings). When
-        omitted, the whole preset is exported. ``None``/empty means full.
+        A ``.gnmpreset`` destination writes the compatibility document (v3 YAML
+        block plus the complete legacy v2 JSON block). Main does not read preset
+        v3: local presets stay JSON and imports stay JSON/portable. ``include``
+        optionally limits the export to a subset of tweaks, given as a list of
+        ``TweakID`` members (or their ``.name`` strings).
         """
         self.last_transfer_error = ""
         file_path = self.get_preset_path(name)
@@ -254,6 +256,11 @@ class PresetManager:
 
             if include:
                 data = self._filter_export(data, include)
+
+            if str(export_path).lower().endswith('.gnmpreset'):
+                from src.controllers.preset_merged_export import write_merged
+                write_merged(data, export_path)
+                return True
 
             if portable or str(export_path).lower().endswith('.gnpreset'):
                 from src.controllers.preset_bundle import export_bundle

@@ -2,16 +2,31 @@
 
 ## Portable presets
 
-On the Presets page, choose **Export** or **Partial Export**, then select
-**Portable Preset with Templates and Icons (*.gnpreset)** in the save dialog.
-The existing JSON format remains available. **Import** accepts either format.
-Archive transfers run on a background thread.
+On the Presets page, choose **Export** or **Partial Export**. The save dialog
+offers **Merged Export (recommended) (*.gnmpreset)**, the existing JSON format,
+and **Portable Preset with Templates and Icons (*.gnpreset)**. **Import** still
+accepts only JSON and `.gnpreset`; archive transfers run on a background thread.
 
 ```sh
+python nugget_cli.py preset export "My Preset" --merged
 python nugget_cli.py preset export "My Preset" --portable --out my-preset.gnpreset
 python nugget_cli.py preset export "My Preset" --portable --include Templates,IconThemes
 python nugget_cli.py preset import my-preset.gnpreset --name "Imported Preset"
 ```
+
+## Merged compatibility export
+
+`*.gnmpreset` is a plain YAML text file for sharing with newer GoldenNugget
+builds. It has one `HEADER` (`PresetVersion: 3`, the writing build's
+`GNVersion`, the preset's `Device`/`OSVersion`, and `Includes: 3,2`), then two
+complete literal blocks named **Preset Version 3 (YAML)** and **Preset Version
+2 (JSON)**, followed by the note *Preset version 2 contains all needed.* The v2
+block is ordinary legacy JSON, so an older build can still use it after
+extracting it.
+
+This build only writes that document. Local presets stay version-2 JSON, there
+is no raw v3 export, and import does not read v3 or `.gnmpreset` files. The
+portable `.gnpreset` ZIP below is unchanged.
 
 The portable format includes the saved preset's template packages and icon
 images. Missing assets cause an export error; an incomplete archive does not

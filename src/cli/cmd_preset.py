@@ -1,9 +1,11 @@
 """``Nugget preset`` — create, load and manage tweak presets."""
 
 import argparse
+import os
 import sys
 
 from src.cli.output import set_result
+from src.controllers.preset_merged_export import EXTENSION as MERGED_EXTENSION
 
 
 def _pm():
@@ -66,11 +68,17 @@ def add_parser(subp):
     p.add_argument("name")
     p.set_defaults(func=_run_delete)
 
-    p = sub.add_parser("export", help="Export a preset to a shareable JSON file")
+    p = sub.add_parser(
+        "export",
+        help="Export a preset as JSON, merged .gnmpreset or portable .gnpreset")
     p.add_argument("name")
-    p.add_argument("--out", default=None, help="output path (default: <name>.json)")
+    p.add_argument("--out", default=None, help="output path (default follows the chosen format)")
     p.add_argument("--include", default="", help="comma-separated TweakID names")
-    p.add_argument('--portable', action='store_true', help='Embed templates and icons in a .gnpreset archive')
+    output = p.add_mutually_exclusive_group()
+    output.add_argument('--portable', action='store_true',
+                        help='Embed templates and icons in a .gnpreset archive')
+    output.add_argument('--merged', action='store_true',
+                        help=f'Write a merged compatibility file ({MERGED_EXTENSION})')
     p.set_defaults(func=_run_export)
 
     p = sub.add_parser("import", help="Import a preset from a JSON file")
@@ -168,13 +176,23 @@ def _run_delete(args):
 def _run_export(args):
     pm = _pm()
     portable = getattr(args, 'portable', False)
-    out = args.out or f"{args.name}.{'gnpreset' if portable else 'json'}"
+    merged = getattr(args, 'merged', False)
+    extension = MERGED_EXTENSION if merged else '.gnpreset' if portable else '.json'
+    out = args.out or f"{args.name}{extension}"
+    # export_preset selects the writer from the destination suffix, so make an
+    # explicit format flag win even when a mismatched --out was supplied.
+    if merged and not out.lower().endswith(MERGED_EXTENSION):
+        out = os.path.splitext(out)[0] + MERGED_EXTENSION
+    elif portable and not out.lower().endswith('.gnpreset'):
+        out = os.path.splitext(out)[0] + '.gnpreset'
     include = [s.strip() for s in args.include.split(",") if s.strip()] or None
     if not pm.export_preset(args.name, out, include=include, portable=portable):
         print(f"ERROR: failed to export preset '{args.name}': {pm.last_transfer_error}", file=sys.stderr)
         return 1
     print(f"Exported '{args.name}' -> {out}")
-    set_result(dict(name=args.name, path=out, portable=portable or out.lower().endswith('.gnpreset')))
+    set_result(dict(name=args.name, path=out,
+                    merged=merged or out.lower().endswith(MERGED_EXTENSION),
+                    portable=portable or out.lower().endswith('.gnpreset')))
     return 0
 
 

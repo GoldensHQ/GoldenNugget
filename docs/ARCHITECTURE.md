@@ -626,6 +626,9 @@ Local transfer/inspection modules:
   and icon assets; `PresetManager` retains the legacy JSON path. Import stores
   selections without activation. `gui/dialogs/file_task.py` runs transfers off
   the GUI thread.
+- `preset_merged_export.py`: write-only `.gnmpreset` compatibility document —
+  one `HEADER` plus complete v3-YAML and v2-JSON blocks. Main keeps v2 JSON
+  storage/import; no v3 codec or YAML dependency is pulled in.
 - `archive_safety.py`: shared ZIP path, link, duplication and expansion checks.
 - `wallpaper_validation.py`: bounded offline package report; exposed through
   `gui/dialogs/wallpaper_validation.py` and `cli/cmd_wallpaper.py`.

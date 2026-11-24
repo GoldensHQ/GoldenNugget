@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (
 
 from src.controllers.hotload import HotLoad, confirm_flagged
 from src.controllers.preset_manager import PresetManager
+from src.controllers.preset_merged_export import EXTENSION as MERGED_EXTENSION
 from src.devicemanagement.device_capabilities import device_os_name
 from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.theme import ColorThemeManager, t
@@ -62,6 +63,42 @@ MAX_VISIBLE_ROWS = 6
 # one preset row plus the gap below it
 ROW_H = 56
 SLIDE_PX = 8
+
+# Export choices. Merged is offered first (and used for the suggested file
+# name) because it is the only format a newer build can read; v2 JSON and the
+# portable archive stay available for older installs. There is deliberately no
+# raw v3 choice and no v3 import filter here.
+EXPORT_FILTER_MERGED = _T("Nugget", "Merged Export (recommended) (*.gnmpreset)")
+EXPORT_FILTER_JSON = _T("Nugget", "JSON Files (*.json)")
+EXPORT_FILTER_PORTABLE = _T("Nugget", "Portable Preset with Templates and Icons (*.gnpreset)")
+EXPORT_FILTERS = (
+    (EXPORT_FILTER_MERGED, MERGED_EXTENSION),
+    (EXPORT_FILTER_JSON, ".json"),
+    (EXPORT_FILTER_PORTABLE, ".gnpreset"),
+)
+DEFAULT_EXPORT_EXTENSION = MERGED_EXTENSION
+_EXPORT_PATTERNS = (
+    ("*.gnmpreset", MERGED_EXTENSION),
+    ("*.gnpreset", ".gnpreset"),
+    ("*.json", ".json"),
+)
+
+
+def _export_filter_text() -> str:
+    return ";;".join(label for label, _ in EXPORT_FILTERS)
+
+
+def _export_choice(file_path: str, selected_filter: str) -> str:
+    """Normalize a save-dialog result to the extension the chosen filter wants."""
+    extension: str | None = next(
+        (ext for pattern, ext in _EXPORT_PATTERNS if pattern in (selected_filter or "")),
+        None)
+    if extension is None:
+        extension = next((ext for _, ext in EXPORT_FILTERS
+                          if file_path.lower().endswith(ext)), DEFAULT_EXPORT_EXTENSION)
+    if not file_path.lower().endswith(extension):
+        file_path = os.path.splitext(file_path)[0] + extension
+    return file_path
 
 
 def restart_app():
@@ -278,12 +315,11 @@ def export_preset_flow(parent, pm: PresetManager, name: str) -> bool:
             _T("Nugget", "Select a preset to export first."))
         return False
     file_path, selected_filter = QFileDialog.getSaveFileName(
-        parent, _T("Nugget", "Export Preset"), f"{name}.json",
-        _T("Nugget", "JSON Files (*.json);;Portable Preset with Templates and Icons (*.gnpreset)"))
+        parent, _T("Nugget", "Export Preset"),
+        f"{name}{DEFAULT_EXPORT_EXTENSION}", _export_filter_text())
     if not file_path:
         return False
-    if '*.gnpreset' in selected_filter and not file_path.lower().endswith('.gnpreset'):
-        file_path = os.path.splitext(file_path)[0] + '.gnpreset'
+    file_path = _export_choice(file_path, selected_filter)
     from src.gui.dialogs.file_task import run_file_task
     if not run_file_task(parent, _T('Nugget', 'Export Preset'),
                          lambda: pm.export_preset(name, file_path)):
@@ -314,12 +350,11 @@ def partial_export_preset_flow(parent, pm: PresetManager, name: str) -> bool:
             _T("Nugget", "Select at least one tweak to export."))
         return False
     file_path, selected_filter = QFileDialog.getSaveFileName(
-        parent, _T("Nugget", "Partial Export"), f"{name}.json",
-        _T("Nugget", "JSON Files (*.json);;Portable Preset with Templates and Icons (*.gnpreset)"))
+        parent, _T("Nugget", "Partial Export"),
+        f"{name}{DEFAULT_EXPORT_EXTENSION}", _export_filter_text())
     if not file_path:
         return False
-    if '*.gnpreset' in selected_filter and not file_path.lower().endswith('.gnpreset'):
-        file_path = os.path.splitext(file_path)[0] + '.gnpreset'
+    file_path = _export_choice(file_path, selected_filter)
     from src.gui.dialogs.file_task import run_file_task
     if not run_file_task(parent, _T('Nugget', 'Partial Export'),
                          lambda: pm.export_preset(name, file_path, include=selected)):
