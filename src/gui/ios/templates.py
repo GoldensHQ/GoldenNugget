@@ -3,7 +3,7 @@ from PySide6.QtCore import QCoreApplication, Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, LiquidActionButton, LiquidCard
 from src.gui.theme import ColorThemeManager, t
 from src.tweaks.tweaks import TweakID, tweaks
 
@@ -36,7 +36,7 @@ class IOSTemplatesPage(QWidget):
 
         content = QWidget()
         self.templates_layout = QVBoxLayout(content)
-        self.templates_layout.setContentsMargins(16, 16, 16, 32)
+        self.templates_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.templates_layout.setSpacing(12)
         self.templates_layout.setAlignment(Qt.AlignTop)
         self._templates_scroll.setWidget(content)

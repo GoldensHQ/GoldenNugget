@@ -8,7 +8,7 @@ separately.
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from awesomeui.liquid.controls import IOSSectionHeader, LiquidCard
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, IOSSectionHeader, LiquidCard
 from src.gui.theme import ColorThemeManager
 
 
@@ -31,7 +31,7 @@ class IOSSupervisionPage(QWidget):
         layout.addWidget(self._scroll)
 
         self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(16, 16, 16, 32)
+        self.content_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.content_layout.setSpacing(8)
 
         self._intro = QLabel(

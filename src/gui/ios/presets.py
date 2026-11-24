@@ -15,7 +15,12 @@ from PySide6.QtWidgets import (
 )
 
 from awesomeui.controls import IOSSectionHeader
-from awesomeui.liquid.controls import LiquidActionButton, LiquidCard, LiquidSwitch
+from awesomeui.liquid.controls import (
+    PAGE_BOTTOM_INSET,
+    LiquidActionButton,
+    LiquidCard,
+    LiquidSwitch,
+)
 from src.controllers.preset_manager import PresetManager
 from src.gui.ios.preset_menu import (
     delete_preset_flow,
@@ -51,7 +56,7 @@ class IOSPresetsPage(QWidget):
         self._scroll.setWidget(content)
         root.addWidget(self._scroll)
         self._layout = QVBoxLayout(content)
-        self._layout.setContentsMargins(16, 16, 16, 32)
+        self._layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self._layout.setSpacing(8)
 
         self._layout.addWidget(IOSSectionHeader(

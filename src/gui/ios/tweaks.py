@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET
 from src.gui.ios.compat import device_family, is_tweak_compatible
 from src.gui.ios.components import (
     IOSSearchEmpty,
@@ -253,7 +254,7 @@ class IOSSectionContent(QWidget):
             self._inner = None
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(16, 16, 16, 32)
+        layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         layout.setSpacing(10)
         inner = QWidget(self)
         inner.setLayout(layout)

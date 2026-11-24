@@ -26,7 +26,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
+from awesomeui.liquid.controls import (
+    PAGE_BOTTOM_INSET,
+    LiquidActionButton,
+    LiquidCard,
+)
 from src.devicemanagement.constants import normalize_udid
 from src.devicemanagement.device_capabilities import device_os_name
 from src.devicemanagement.passcode_support import current_passcode_theme_reason
@@ -256,7 +260,7 @@ class IOSHomePage(QWidget):
         outer.addWidget(scroll)
 
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(16, self.CONTENT_TOP_MARGIN, 16, 98)
+        layout.setContentsMargins(16, self.CONTENT_TOP_MARGIN, 16, PAGE_BOTTOM_INSET)
         layout.setSpacing(12)
 
         # Logo + Title row

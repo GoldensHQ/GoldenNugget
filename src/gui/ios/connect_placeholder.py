@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from awesomeui.liquid.controls import LiquidActionButton
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, LiquidActionButton
 from src.gui.theme import ColorThemeManager, t, theme_pixmap
 
 
@@ -36,7 +36,7 @@ class ConnectDevicePlaceholder(QWidget):
         self._scroll.setWidget(content)
         root.addWidget(self._scroll)
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(28, 32, 28, 100)
+        layout.setContentsMargins(28, 32, 28, PAGE_BOTTOM_INSET)
         layout.setSpacing(14)
         layout.setAlignment(Qt.AlignCenter)
 

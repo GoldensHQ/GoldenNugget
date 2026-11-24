@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 
 from awesomeui.controls import IOSSectionHeader
 from awesomeui.liquid.cards import ControlGrid, prepare_card
-from awesomeui.liquid.controls import LiquidCard, LiquidSwitch
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, LiquidCard, LiquidSwitch
 from awesomeui.liquid.selection_card import bind_selection_card
 from awesomeui.liquid.value_entry import GlassValueEntry
 from src.controllers.settings import Settings
@@ -65,7 +65,7 @@ class IOSStatusBarPage(QWidget):
         layout.addWidget(scroll)
 
         self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(16, 16, 16, 32)
+        self.content_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.content_layout.setSpacing(10)
 
         # (widget, survives iOS 27) for every card and section header, so the

@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from awesomeui.liquid.controls import LiquidCard
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, LiquidCard
 from src.gui.dialogs.app_list_dialog import AppListExportDialog
 from src.gui.dialogs.confirmation import ask_confirmation
 from src.gui.dialogs.icon_pack_downloader import IconPackDownloaderDialog
@@ -46,7 +46,7 @@ class IOSIconThemesPage(QWidget):
         layout.addWidget(scroll)
 
         self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(16, 16, 16, 32)
+        self.content_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.content_layout.setSpacing(8)
 
         hint = QLabel(QCoreApplication.translate(

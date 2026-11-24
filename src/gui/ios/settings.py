@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (
 
 from awesomeui.controls import IOSSearchEmpty, IOSSectionHeader, IOSSettingsAction
 from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
-from awesomeui.liquid.controls import LiquidCard, LiquidSwitch
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, LiquidCard, LiquidSwitch
 from src.controllers.hotload import HotLoad
 from src.controllers.preset_manager import PresetManager
 from src.controllers.video_handler import set_ignore_frame_limit
@@ -147,7 +147,7 @@ class IOSSettingsPage(QWidget):
         layout.addWidget(self._scroll)
 
         self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(16, 16, 16, 32)
+        self.content_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.content_layout.setSpacing(10)
 
         # --- Appearance ---

@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET
 from src.controllers.favorites import TweakFavorites
 from src.gui.ios.components import (
     IOSSearchEmpty,
@@ -194,7 +195,7 @@ class IOSDaemonsContent(QWidget):
         self.daemons_tweak = tweaks[TweakID.Daemons]
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 32)
+        layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         layout.setSpacing(10)
         layout.setAlignment(Qt.AlignTop)
 

@@ -50,7 +50,6 @@ from PySide6.QtGui import (
     QColor,
     QCursor,
     QGuiApplication,
-    QImage,
     QPainter,
     QPen,
     QPolygon,
@@ -71,6 +70,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from awesomeui.liquid.controls import blurred_backdrop
 from src.gui import native_corners
 from src.gui.theme import ColorThemeManager, t, theme_icon
 from src.version import App_Version
@@ -486,16 +486,8 @@ class _TitleStrip(QWidget):
         self._backdrop = None
         if shell is None or width < 8 or height < 4:
             return
-        grab = shell.grab(QRect(0, 0, int(width * self.devicePixelRatioF()) or width, height))
-        if grab.isNull():
-            return
-        small = grab.toImage().scaled(
-            max(1, width // self._BLUR_FACTOR),
-            max(1, height // self._BLUR_FACTOR),
-            Qt.AspectRatioMode.IgnoreAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        self._backdrop = QImage(small)
+        self._backdrop = blurred_backdrop(
+            shell, QRect(0, 0, width, height), self._BLUR_FACTOR)
 
 
 def window_controls_zoom(window):
@@ -532,6 +524,9 @@ class WindowChrome(QObject):
         self._cursor_backup = None
         self._zoomed = False
         self._pre_zoom_geometry = None
+        # Floating glass surfaces that frost the content under them (the
+        # dock). Each exposes ``blur_zone()`` and ``invalidate_backdrop()``.
+        self._blurred_overlays = []
 
         flags = window.windowFlags()
         window.setWindowFlags(flags | Qt.WindowType.FramelessWindowHint)
@@ -650,6 +645,28 @@ class WindowChrome(QObject):
         return watched is controls or \
             (isinstance(controls, QWidget) and controls.isAncestorOf(watched))
 
+    def register_blurred_overlay(self, widget):
+        """Keep a floating glass surface's blurred backdrop in sync.
+
+        The surface exposes ``blur_zone()`` (its rect in window coordinates)
+        and ``invalidate_backdrop()``. A repaint underneath it makes the
+        blurred read stale exactly like a repaint under the title strip, so it
+        is invalidated from the same Paint-event watch instead of running a
+        second app-level filter of its own.
+        """
+        if widget not in self._blurred_overlays:
+            self._blurred_overlays.append(widget)
+
+    def _invalidate_overlays(self, watched, rect):
+        """Re-frost every registered overlay that *rect* (window coords) hits."""
+        for overlay in tuple(self._blurred_overlays):
+            if overlay is watched or overlay.isAncestorOf(watched):
+                # The overlay's own paint never appears in its backdrop (the
+                # grab takes the central widget alone), so it cannot stale it.
+                continue
+            if rect.intersects(overlay.blur_zone()):
+                overlay.invalidate_backdrop()
+
     def eventFilter(self, watched, event):
         if watched is self._window:
             etype = event.type()
@@ -701,6 +718,7 @@ class WindowChrome(QObject):
                 watched.mapTo(self._window, watched.rect().topLeft()))
             if rect.y() < DRAG_STRIP_HEIGHT:
                 self._strip.invalidate()
+            self._invalidate_overlays(watched, rect)
         if etype == QEvent.Type.MouseButtonPress:
             return self._press(watched, event)
         if etype == QEvent.Type.MouseMove:

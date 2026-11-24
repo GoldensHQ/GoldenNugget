@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from awesomeui.controls import IOSSegmentedFilter
 from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox  # noqa: F811 (intentional: swap in glass combos)
 from awesomeui.liquid.controls import (
+    PAGE_BOTTOM_INSET,
     LiquidActionButton,
     LiquidCard,
     LiquidSwitch,
@@ -366,7 +367,7 @@ class IOSPosterboardPage(QWidget):
         self._tendies_scroll.setWidget(content)
 
         self.tendies_list = QVBoxLayout(content)
-        self.tendies_list.setContentsMargins(16, 16, 16, 32)
+        self.tendies_list.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.tendies_list.setSpacing(10)
         self.tendies_list.setAlignment(Qt.AlignTop)
 
@@ -447,7 +448,7 @@ class IOSPosterboardPage(QWidget):
         self._video_scroll.setWidget(content)
 
         v_layout = QVBoxLayout(content)
-        v_layout.setContentsMargins(16, 16, 16, 32)
+        v_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         v_layout.setSpacing(16)
 
         self._video_labels = []

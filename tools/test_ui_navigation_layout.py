@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QEvent, QObject, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QKeyEvent
+from PySide6.QtGui import QColor, QIcon, QKeyEvent, QPaintEvent
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -181,6 +181,39 @@ class UILayoutTests(unittest.TestCase):
         centre = image.pixelColor(settings.width() // 2, 4)
         self.assertEqual(centre.alpha(), 255)
         self.assertEqual(centre, QColor(colors.accent))
+
+
+    def test_dock_frosts_the_page_flowing_under_it(self):
+        window = DockWindow()
+        self.addCleanup(window.deleteLater)
+        content = QWidget(window)
+        content.setGeometry(0, 0, window.width(), window.height())
+        content.setStyleSheet("background: #f2c94c;")
+        # The real MainWindow's central widget is the page shell; the dock is
+        # its window child, so grabbing the shell shows the page, never the
+        # dock's own glass (which would feed back into the backdrop).
+        window.centralWidget = lambda: content
+        dock = LiquidDock(window, window)
+        self.addCleanup(dock.deleteLater)
+        dock._motion.stop()
+        dock._amount = 1.0
+        dock._expanded = True
+        dock.position()
+        window.show()
+        self.app.processEvents()
+        dock.grab()
+
+        blur = dock._blur
+        self.assertIsNotNone(blur.image, "the dock never sampled the page")
+        self.assertLess(blur.image.width(), dock.width() // 4)
+        self.assertEqual(blur.target, dock.rect().intersected(content.rect()))
+        self.assertEqual(dock.blur_zone(), dock.geometry())
+
+        # A repaint under the dock must make the read stale; the guard only
+        # suppresses the re-arm during the grab itself.
+        blur._mute = 0
+        dock.invalidate_backdrop()
+        self.assertTrue(blur._dirty)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,12 @@ from PySide6.QtCore import QCoreApplication, Qt, QTimer
 from PySide6.QtWidgets import QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from awesomeui.controls import IOSSectionHeader
-from awesomeui.liquid.controls import LiquidActionButton, LiquidCard, LiquidDangerButton
+from awesomeui.liquid.controls import (
+    PAGE_BOTTOM_INSET,
+    LiquidActionButton,
+    LiquidCard,
+    LiquidDangerButton,
+)
 from src.gui.theme import ColorThemeManager, t
 
 
@@ -28,7 +33,7 @@ class IOSApplyPage(QWidget):
         layout.addWidget(scroll)
 
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(16, 16, 16, 32)
+        content_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         content_layout.setSpacing(8)
 
         # --- Apply ---

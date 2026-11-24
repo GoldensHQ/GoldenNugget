@@ -37,7 +37,7 @@ from PySide6.QtWidgets import (
 
 from awesomeui.controls import IOSSectionHeader
 from awesomeui.liquid.choice_editor import GlassComboBox as QComboBox
-from awesomeui.liquid.controls import LiquidActionButton, LiquidCard
+from awesomeui.liquid.controls import PAGE_BOTTOM_INSET, LiquidActionButton, LiquidCard
 from src.devicemanagement.passcode_support import (
     current_passcode_theme_reason,
     passcode_theme_unavailable_reason,
@@ -215,7 +215,7 @@ class IOSPasscodeThemePage(QWidget):
         layout.addWidget(self._scroll)
 
         self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(16, 16, 16, 32)
+        self.content_layout.setContentsMargins(16, 16, 16, PAGE_BOTTOM_INSET)
         self.content_layout.setSpacing(8)
 
         self._hint = QLabel(QCoreApplication.translate("Nugget", 

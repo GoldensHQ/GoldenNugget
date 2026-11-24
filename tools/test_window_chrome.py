@@ -34,7 +34,7 @@ os.environ.setdefault(
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, Qt
-from PySide6.QtGui import QRegion
+from PySide6.QtGui import QPaintEvent, QRegion
 from PySide6.QtWidgets import (
     QApplication,
     QLabel,
@@ -700,6 +700,48 @@ def test_buttons():
     check("close closes", not window.isVisible())
 
 
+class _Overlay(QWidget):
+    """A stand-in for the frosted dock registered with the chrome."""
+
+    def __init__(self, parent, zone):
+        super().__init__(parent)
+        self._zone = zone
+        self.invalidations = 0
+        self.setGeometry(zone)
+
+    def blur_zone(self):
+        return self._zone
+
+    def invalidate_backdrop(self):
+        self.invalidations += 1
+
+
+def test_blurred_overlay_invalidation():
+    print("frosted overlay invalidation")
+    window, chrome, _header, _page = make_window()
+    zone = QRect(0, window.height() - 80, window.width(), 80)
+    overlay = _Overlay(window, zone)
+    chrome.register_blurred_overlay(overlay)
+    chrome.register_blurred_overlay(overlay)
+    check("registration is idempotent", chrome._blurred_overlays == [overlay])
+
+    # A page repaint *inside* the dock's zone makes its blurred read stale.
+    under = QWidget(window)
+    under.setGeometry(QRect(20, zone.y() + 10, 100, 30))
+    chrome.eventFilter(under, QPaintEvent(QRect(0, 0, 100, 30)))
+    check("repaint under the surface invalidates", overlay.invalidations == 1)
+
+    # The surface's own paint never appears in its backdrop (the grab takes
+    # the central widget alone), so it must not re-arm the invalidation.
+    chrome.eventFilter(overlay, QPaintEvent(QRect(0, 0, 20, 20)))
+    check("the surface's own paint is ignored", overlay.invalidations == 1)
+
+    away = QWidget(window)
+    away.setGeometry(QRect(20, 20, 100, 30))
+    chrome.eventFilter(away, QPaintEvent(QRect(0, 0, 100, 30)))
+    check("repaint far from the surface is ignored", overlay.invalidations == 1)
+
+
 def test_static_guards():
     print("static guards")
     path = os.path.join(
@@ -739,6 +781,7 @@ def main():
     test_drag_moves_window()
     test_title_label()
     test_buttons()
+    test_blurred_overlay_invalidation()
     test_static_guards()
     print(f"\n{PASS} checks passed")
 
