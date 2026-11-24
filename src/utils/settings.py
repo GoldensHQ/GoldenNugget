@@ -23,6 +23,11 @@ downgrade still sees the old values. New values are written to::
 
 which keeps the per-user data location historical (``src.utils.paths``).
 
+Every store written here carries a top-level ``GNUGGET_VERSION`` mark with the
+build that wrote it (the same key presets use). The mark is file metadata: it
+is stripped on read, so it never appears as a user preference, and it is
+refreshed on each write. A read alone still never creates the file.
+
 QSettings semantics that callers rely on and that are preserved here:
 
 * ``/`` in a key is a group separator; macOS stored it as ``.`` and Linux as
@@ -48,6 +53,7 @@ from pathlib import Path
 from typing import Any
 
 from src.utils.paths import app_data_dir, legacy_app_data_dirs
+from src.version import GNUGGET_VERSION, App_Version
 
 _LOCK = threading.RLock()
 _STORES: dict[tuple[str, str], "_Store"] = {}
@@ -56,6 +62,7 @@ _STORES: dict[tuple[str, str], "_Store"] = {}
 # --------------------------------------------------------------------------- #
 # Native (legacy QSettings) readers
 # --------------------------------------------------------------------------- #
+
 
 def _flatten_dotted(data: dict, prefix: str = "") -> dict:
     """Turn CFPreferences' ``group.key`` form into ``group/key``."""
@@ -185,8 +192,9 @@ def _legacy_json(org: str, app: str) -> dict:
     if os.environ.get("GOLDENNUGGET_PREFERENCES_DIR", "").strip():
         # An explicit store location is a sandbox (tests, tools): no history.
         return {}
-    candidates = [root / "preferences" / org / f"{app}.json"
-                  for root in legacy_app_data_dirs()]
+    candidates = [
+        root / "preferences" / org / f"{app}.json" for root in legacy_app_data_dirs()
+    ]
     for path in candidates:
         if not path.is_file():
             continue
@@ -202,6 +210,7 @@ def _legacy_json(org: str, app: str) -> dict:
 # --------------------------------------------------------------------------- #
 # Store
 # --------------------------------------------------------------------------- #
+
 
 def _preferences_root() -> Path:
     """Directory holding the JSON stores.
@@ -257,6 +266,10 @@ class _Store:
             # the very JSON file this store just shadowed.
             if data:
                 self._dirty = True
+        # Writer metadata from an older (or newer) build is not a preference.
+        # Drop it here so allKeys()/contains() keep their QSettings meaning and
+        # a stamp from a legacy store can never shadow a real value.
+        data.pop(GNUGGET_VERSION, None)
         self._data = data
         return data
 
@@ -266,8 +279,12 @@ class _Store:
         if not self._dirty or self._data is None:
             return
         try:
-            payload = json.dumps(self._data, ensure_ascii=False, indent=2,
-                                 default=_json_default)
+            stamped = dict(self._data)
+            stamped.pop(GNUGGET_VERSION, None)
+            stamped = {GNUGGET_VERSION: str(App_Version), **stamped}
+            payload = json.dumps(
+                stamped, ensure_ascii=False, indent=2, default=_json_default
+            )
         except Exception:
             # Settings must never crash an operation; losing a preference is
             # better than aborting an apply.
@@ -281,8 +298,11 @@ class _Store:
         temporary = None
         try:
             with tempfile.NamedTemporaryFile(
-                mode="w", encoding="utf-8", dir=self.path.parent,
-                prefix=".settings-", delete=False,
+                mode="w",
+                encoding="utf-8",
+                dir=self.path.parent,
+                prefix=".settings-",
+                delete=False,
             ) as stream:
                 temporary = stream.name
                 stream.write(payload)
@@ -396,15 +416,15 @@ def _coerce(value: Any, wanted: type | None) -> Any:
     if wanted is int:
         try:
             return int(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             try:
                 return int(float(value))
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return 0
     if wanted is float:
         try:
             return float(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return 0.0
     try:
         return wanted(value)

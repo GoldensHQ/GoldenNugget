@@ -106,8 +106,11 @@ app that starts before the move does not begin from defaults; an explicit
 `GOLDENNUGGET_PREFERENCES_DIR` disables that history. **A read never writes** —
 the merged view is persisted by the first `setValue`, which is what keeps a
 store opened before the migration (the theme manager) from creating the new
-JSON and making the move skip the old one. `Settings` reads through
-to the legacy `Nugget` org before `GoldenNugget`; `value(key, default,
+JSON and making the move skip the old one. Every JSON file written by the
+store carries a top-level `GNUGGET_VERSION` mark (the same key presets use)
+with the build that wrote it; it is stripped on read, so it is file metadata,
+not a user preference (`tools/test_settings_version_stamp.py`). `Settings`
+reads through to the legacy `Nugget` org before `GoldenNugget`; `value(key, default,
 type=bool|str|int|float)` keeps QSettings' coercion rules. Do not reintroduce
 `QSettings` in backend code, and do not assume `isinstance(x, QSettings)`
 anywhere (the GUI's accent/theme managers use the same `Settings` store now).

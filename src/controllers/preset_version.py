@@ -6,9 +6,8 @@ the preset format version or the device's iOS version, so it survives export
 and import instead of being refreshed by whichever build happens to import
 the file.
 """
-from src.version import App_Version
 
-GNUGGET_VERSION = "GNUGGET_VERSION"
+from src.version import GNUGGET_VERSION, App_Version  # noqa: F401 - re-exported
 
 
 def preset_version() -> str:

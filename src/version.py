@@ -7,3 +7,8 @@ GUI package. ``src/gui/version.py`` re-exports them for the GUI side.
 
 App_Version = "10.0"
 App_Build = 2
+
+# Top-level key used by files GoldenNugget writes to record which build wrote
+# them (settings JSON, presets, merged exports). This is writer metadata, not
+# a user preference and not a file-format version.
+GNUGGET_VERSION = "GNUGGET_VERSION"
