@@ -13,11 +13,10 @@ import json
 import os
 import tempfile
 
-from src.version import App_Version
+from src.version import GNUGGET_VERSION, App_Version
 
 # Older merged files may carry this stamp; main does not write it locally, but
 # preserving it keeps the header faithful when one is present in the source.
-GNUGGET_VERSION = "GNUGGET_VERSION"
 
 FORMAT = "GoldenNugget merged preset"
 EXTENSION = ".gnmpreset"

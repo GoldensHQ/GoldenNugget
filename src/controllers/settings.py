@@ -1,5 +1,7 @@
 from PySide6.QtCore import QSettings
 
+from src.version import GNUGGET_VERSION, App_Version
+
 # Settings are stored under the "GoldenNugget" organization. Keys that are not
 # present there fall back to the legacy "Nugget" organization so existing users
 # keep their settings after the rename. Everything written goes to
@@ -30,6 +32,12 @@ class Settings:
 
     def setValue(self, key: str, value):
         self._primary.setValue(key, value)
+        # Leave a mark of the build that last wrote the settings file. It is
+        # refreshed on every write so an upgrade cannot keep a stale version,
+        # and it is only written alongside a real preference (reading never
+        # creates the file). The key lives in the primary org only; the legacy
+        # org stays untouched for downgrades.
+        self._primary.setValue(GNUGGET_VERSION, str(App_Version))
 
     def remove(self, key: str):
         self._primary.remove(key)
