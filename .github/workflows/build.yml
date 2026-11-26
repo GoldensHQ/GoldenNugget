@@ -210,6 +210,12 @@ jobs:
 
       - name: Setup Python via uv
         uses: astral-sh/setup-uv@v7
+        with:
+          # The default **/*requirements*.txt glob walks the whole checkout and
+          # stats src/gui/liquid, a symlink into the awesomeui submodule — that
+          # stat is EPERM on Windows runners. Every dependency file is at the
+          # repo root, so keep the cache glob there.
+          cache-dependency-glob: requirements*.txt
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
