@@ -9,3 +9,13 @@ class PreferenceKeyReset(bytes):
         instance = super().__new__(cls, b'')
         instance.paths = paths
         return instance
+
+
+class PreferenceNullify(bytes):
+    """Whole-file reset payload: a valid empty plist delivered verbatim.
+
+    Unlike a keyed reset this never needs a backup baseline, so a reset still
+    works when no apply record exists or the preference file was created by a
+    tweak. The marker keeps duplicate merges and the injector from treating
+    the empty dict as an unreadable/incomplete preference edit.
+    """

@@ -39,7 +39,7 @@ from src.exceptions.device_errors import (
 from src.exceptions.nugget_exception import NuggetException
 from src.utils.async_disk import disk_call
 from src.utils.file_to_restore import FileToRestore, _FileMode
-from src.utils.preference_reset import PreferenceKeyReset
+from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
 
 from . import backup, perform_restore, reboot_device
 from .afc_media import (
@@ -133,6 +133,13 @@ def merge_duplicates(original_files: list[FileToRestore]) -> list[FileToRestore]
         file_loc += restore_path
         if file_loc in existing_locations:
             previous = no_dupe_files[existing_locations[file_loc]]
+            if (isinstance(previous.contents, PreferenceNullify)
+                    or isinstance(file.contents, PreferenceNullify)):
+                # A managed file and its native mirror can name the same file.
+                # Once one payload wipes it, the other cannot add keys back —
+                # keep the marker so the injector delivers the whole file.
+                previous.contents = PreferenceNullify(plistlib.dumps({}))
+                continue
             if isinstance(previous.contents, PreferenceKeyReset) or isinstance(file.contents, PreferenceKeyReset):
                 if not (isinstance(previous.contents, PreferenceKeyReset)
                         and isinstance(file.contents, PreferenceKeyReset)):
