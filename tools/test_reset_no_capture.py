@@ -225,11 +225,14 @@ def test_status_bar_is_always_resettable():
 
 def test_missing_reset_evidence_never_clears_preferences():
     """Registry sections reset by writing valid empty plists; Daemons stay recorded-only."""
-    from src.utils.preference_reset import PreferenceNullify
+    from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
 
-    def is_empty_plist(value):
-        # A valid, non-empty-byte empty plist: the device parses it and
-        # falls back to its defaults.
+    def is_valid_reset(path, value):
+        # Shared files (FeatureFlags/Global.plist and the daemons plist) stay
+        # keyed; every other preference file is a valid, non-empty-byte empty
+        # plist so the device falls back to its defaults.
+        if path in (FileLocation.featureflags.value, FileLocation.disabledDaemons.value):
+            return isinstance(value, PreferenceKeyReset)
         return (isinstance(value, PreferenceNullify)
                 and len(value) > 0 and plistlib.loads(value) == {})
 
@@ -242,8 +245,9 @@ def test_missing_reset_evidence_never_clears_preferences():
             fake, errors, _ = run_reset(version, [page])
             check(f"{version}/{page.name}: unrecorded section still resets", not errors, repr(errors[:1]))
             check("a restore is started", fake.restored is not None)
-            check("every preference payload is a valid empty plist",
-                  fake.written and all(is_empty_plist(value) for value in fake.written.values()))
+            check("every preference payload is a verified reset",
+                  fake.written and all(is_valid_reset(path, value)
+                                       for path, value in fake.written.items()))
             check("no capture connection is opened", not fake.session_opened)
         # A dynamic launchd set has no registry truth: no record, no reset.
         fake, errors, _ = run_reset(version, [Page.Daemons])
@@ -255,7 +259,7 @@ def test_missing_reset_evidence_never_clears_preferences():
 
 def test_unrecorded_liquid_glass_covers_legacy_keys():
     """Files applied before records existed are reset without any record."""
-    from src.utils.preference_reset import PreferenceNullify
+    from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
 
     fake, errors, _ = run_reset("27.2", [Page.LiquidGlass])
     check("reset succeeds with no record", not errors, repr(errors))
@@ -271,9 +275,38 @@ def test_unrecorded_liquid_glass_covers_legacy_keys():
     mirror = fake.written.get("/var/mobile/Library/Preferences/com.apple.springboard.plist")
     check("the springboard mirror follows the managed file",
           mirror is not None and plistlib.loads(mirror) == {})
-    check("every payload is a nullify, never zero bytes",
-          all(isinstance(v, PreferenceNullify) and len(v) > 0
+    check("every payload is a verified reset, never an empty file",
+          all(((isinstance(v, PreferenceNullify) and len(v) > 0
+                and plistlib.loads(v) == {})
+               or (isinstance(v, PreferenceKeyReset) and v.paths))
               for v in fake.written.values()))
+
+
+def test_unrecorded_fallback_keeps_factory_values():
+    """An unrecorded fallback must use the tweak's own default, not True.
+
+    The clock-animation factory on newer branches has a dict default; forcing
+    True flattens its leaf path to the parent key. This branch's text factories
+    have an empty default, where forcing True would invent a key no apply ever
+    wrote. Both cases are the same bug: only the real default is safe.
+    """
+    from src.controllers.default_reset import _spec_reset_paths
+    from src.tweaks.registry import SPECS
+    from src.tweaks.tweak_loader import _build_spec
+    from src.tweaks.tweak_names import TweakID
+
+    spec = next(
+        spec for spec in SPECS
+        if spec.id.name == TweakID.SBCaptureButtonAssociatedAppBundleIdentifier.name
+    )
+    tweak = _build_spec(spec)
+    unset = _spec_reset_paths(tweak)
+    forced = _spec_reset_paths(tweak, True)
+    path = ("SBCaptureButtonAssociatedAppBundleIdentifier",)
+    check("an unrecorded text factory adds no key that was never applied",
+          not unset.get(FileLocation.springboard), repr(unset))
+    check("forcing True would invent a reset key",
+          path in forced.get(FileLocation.springboard, set()), repr(forced))
 
 
 def test_recorded_reset_targets_only_applied_keys():
@@ -357,9 +390,11 @@ def test_duplicate_nullify_files_stay_nullify():
 
     empty = PreferenceNullify(plistlib.dumps({}))
     files = [
-        FileToRestore(contents=empty, restore_path='/var/mobile/Library/Preferences/.GlobalPreferences.plist',
+        FileToRestore(contents=empty,
+                      restore_path='/var/mobile/Library/Preferences/.GlobalPreferences.plist',
                       domain='HomeDomain'),
-        FileToRestore(contents=empty, restore_path='/var/mobile/Library/Preferences/.GlobalPreferences.plist',
+        FileToRestore(contents=empty,
+                      restore_path='/var/mobile/Library/Preferences/.GlobalPreferences.plist',
                       domain='HomeDomain'),
     ]
     merged = merge_duplicates(files)
@@ -373,6 +408,7 @@ def test_duplicate_nullify_files_stay_nullify():
 test_capture_is_gone()
 test_missing_reset_evidence_never_clears_preferences()
 test_unrecorded_liquid_glass_covers_legacy_keys()
+test_unrecorded_fallback_keeps_factory_values()
 test_recorded_reset_targets_only_applied_keys()
 test_featureflags_reset_never_clears_the_whole_file()
 test_duplicate_nullify_files_stay_nullify()

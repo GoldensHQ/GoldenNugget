@@ -12,8 +12,10 @@ class PreferenceKeyReset(bytes):
 
 
 class PreferenceNullify(bytes):
-    """Whole-file nullify payload (NullifyFileTweak): the file is delivered
-    as-is with no baseline merge — wiping the file IS the tweak's purpose, so
-    the backup's copy of the file is irrelevant and must never abort the
-    apply (an empty dict patch is intentional here, not a broken edit)."""
+    """Whole-file reset payload: a valid empty plist delivered verbatim.
 
+    Unlike a keyed reset this never needs a backup baseline, so a reset still
+    works when no apply record exists or the preference file was created by a
+    tweak. The marker keeps duplicate merges and the injector from treating
+    the empty dict as an unreadable/incomplete preference edit.
+    """

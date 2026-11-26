@@ -136,19 +136,18 @@ def merge_duplicates(original_files: list[FileToRestore]) -> list[FileToRestore]
         file_loc += restore_path
         if file_loc in existing_locations:
             previous = no_dupe_files[existing_locations[file_loc]]
+            if (isinstance(previous.contents, PreferenceNullify)
+                    or isinstance(file.contents, PreferenceNullify)):
+                # A managed file and its native mirror can name the same file.
+                # Once one payload wipes it, the other cannot add keys back —
+                # keep the marker so the injector delivers the whole file.
+                previous.contents = PreferenceNullify(plistlib.dumps({}))
+                continue
             if isinstance(previous.contents, PreferenceKeyReset) or isinstance(file.contents, PreferenceKeyReset):
                 if not (isinstance(previous.contents, PreferenceKeyReset)
                         and isinstance(file.contents, PreferenceKeyReset)):
                     raise ValueError('Cannot combine preference writes and resets for the same file.')
                 previous.contents = PreferenceKeyReset(previous.contents.paths + file.contents.paths)
-                continue
-            if isinstance(previous.contents, PreferenceNullify) or isinstance(file.contents, PreferenceNullify):
-                # Two payloads may name the same file (a managed location and
-                # its native twin, e.g. the .GlobalPreferences mirror). Two
-                # whole-file wipes are still a whole-file wipe: keep the
-                # Nullify marker, or the plist merge below would emit a plain
-                # empty dict that the injector rejects as an unverified reset.
-                previous.contents = PreferenceNullify(plistlib.dumps({}))
                 continue
             if not restore_path.endswith('.plist'):
                 print(f'cannot merge duplicate file, ignoring {file_loc}')

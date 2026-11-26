@@ -13,6 +13,7 @@ from src.utils.pages import Page
 from src.utils.preference_reset import PreferenceKeyReset, PreferenceNullify
 
 _EMPTY_PLIST = plistlib.dumps({})
+_UNSET = object()
 
 PAGE_SECTIONS = {Page.Springboard: Section.SPRINGBOARD,
                  Page.InternalOptions: Section.INTERNAL,
@@ -38,8 +39,14 @@ def remaining_reset_entries(entries, pages):
                         and isinstance(_build_spec(specs[name]), BasicPlistTweak)))}
 
 
-def _spec_reset_paths(tweak, value=True, tolerate_value_error=False):
-    """Key paths a keyed reset removes for one registry spec's tweak."""
+def _spec_reset_paths(tweak, value=_UNSET, tolerate_value_error=False):
+    """Key paths a keyed reset removes for one registry spec's tweak.
+
+    An unrecorded fallback must keep the tweak's own default value: forcing
+    ``True`` onto e.g. the clock-animation factory (whose value is
+    ``{"SwiftUITimeAnimation": {"Enabled": True}}``) would flatten the leaf
+    path to the parent key and reset more than that tweak owns.
+    """
     reset_paths = getattr(tweak, 'preference_reset_paths', None)
     if reset_paths is not None:
         return {location: set(keys) for location, keys in reset_paths().items()}
@@ -49,7 +56,10 @@ def _spec_reset_paths(tweak, value=True, tolerate_value_error=False):
         return {tweak.file_location: set(tweak._filter_keys(dict(tweak.value)))}
     try:
         with suspend_tweak_notifications():
-            tweak.set_value(value)
+            if value is _UNSET:
+                tweak.set_enabled(True)
+            else:
+                tweak.set_value(value)
             payloads = tweak.apply_tweak({})
     except ValueError:
         if tolerate_value_error:
@@ -59,29 +69,25 @@ def _spec_reset_paths(tweak, value=True, tolerate_value_error=False):
         raise
     paths = defaultdict(set)
     for location, values in payloads.items():
-        if location == FileLocation.featureflags:
-            for domain, flags in values.items():
-                paths[location].update((domain, flag, field)
-                                       for flag, fields in flags.items()
-                                       for field in fields)
-        else:
-            paths[location].update(_leaf_paths(values))
+        # Feature flags carry both {"domain": {"flag": {"Enabled": True}}}
+        # and plain {"domain": {"flag": True}} payloads; walking leaves covers
+        # both without assuming a fixed depth.
+        paths[location].update(_leaf_paths(values))
     return paths
 
 
 def preference_reset_plan(entries, pages):
     """Reset payloads for the selected sections.
 
-    The set of locations is the union of the applied-selection record (the
-    exact tweaks the last successful apply carried, plus dynamic sets like
-    daemons) and the tweak registry's static entries for the selected
-    sections: a tweak applied before records existed — or whose record an
-    earlier reset consumed — is still covered. Preference files are reset by
-    writing a valid empty plist (never zero bytes): the device falls back to
-    its defaults, and no backup baseline is needed, so the reset works even
-    for a file that never entered a backup. FeatureFlags/Global.plist and the
-    launchd disabled.plist stay keyed removals — wiping those files whole
-    would also undo flags and disabled services GoldenNugget does not own.
+    The locations are the union of the applied-selection record (the exact
+    tweaks the last successful apply carried, plus dynamic sets like daemons)
+    and the tweak registry's static entries for the selected sections: a
+    tweak applied before records existed — or whose record an earlier reset
+    consumed — is still covered. Preference files are reset by writing a
+    valid empty plist (never zero bytes): the device falls back to its
+    defaults and no backup baseline is needed. FeatureFlags/Global.plist and
+    the launchd disabled.plist stay keyed removals — wiping those files whole
+    would undo flags and disabled services GoldenNugget does not own.
     """
     recorded = entries if isinstance(entries, dict) else {}
     selected = {PAGE_SECTIONS[page] for page in pages if page in PAGE_SECTIONS}
@@ -101,6 +107,7 @@ def preference_reset_plan(entries, pages):
             continue
         for location, keys in _spec_reset_paths(tweak, entry['value']).items():
             paths[location].update(keys)
+
     for spec in SPECS:
         if spec.section not in selected or spec.id.name in recorded:
             continue
